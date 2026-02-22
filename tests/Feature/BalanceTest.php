@@ -18,6 +18,7 @@ use App\Models\QuoteItem;
 use App\Models\Role;
 use App\Models\Supplier;
 use App\Models\User;
+use App\Services\PdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -870,5 +871,133 @@ class BalanceTest extends TestCase
 
         $response = $this->actingAs($user)->get('/admin/company-settings');
         $response->assertForbidden();
+    }
+
+    // --- PDF Tests ---
+
+    public function test_pdf_service_generates_invoice_pdf(): void
+    {
+        $customer = Customer::first();
+        $invoice = Invoice::create([
+            'invoice_number' => 'RE-TEST-001',
+            'customer_id' => $customer->id,
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(14),
+            'status' => 'sent',
+        ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'description' => 'Test Artikel',
+            'quantity' => 2,
+            'unit' => 'Stueck',
+            'net_price' => 100.00,
+            'vat_rate' => 19.00,
+            'sort_order' => 0,
+        ]);
+
+        $service = app(PdfService::class);
+        $content = $service->generateInvoice($invoice);
+
+        $this->assertNotEmpty($content);
+        $this->assertStringStartsWith('%PDF', $content);
+    }
+
+    public function test_pdf_service_generates_quote_pdf(): void
+    {
+        $customer = Customer::first();
+        $quote = Quote::create([
+            'quote_number' => 'AN-TEST-001',
+            'customer_id' => $customer->id,
+            'quote_date' => now(),
+            'valid_until' => now()->addDays(30),
+            'status' => 'sent',
+            'apply_discount' => true,
+            'discount_percent' => 10,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'description' => 'Test Artikel',
+            'quantity' => 5,
+            'unit' => 'Stueck',
+            'net_price' => 50.00,
+            'vat_rate' => 19.00,
+            'sort_order' => 0,
+        ]);
+
+        $service = app(PdfService::class);
+        $content = $service->generateQuote($quote);
+
+        $this->assertNotEmpty($content);
+        $this->assertStringStartsWith('%PDF', $content);
+    }
+
+    public function test_pdf_service_generates_delivery_note_pdf(): void
+    {
+        $customer = Customer::first();
+        $dn = DeliveryNote::create([
+            'delivery_note_number' => 'LS-TEST-001',
+            'customer_id' => $customer->id,
+            'delivery_date' => now(),
+            'status' => 'delivered',
+        ]);
+
+        DeliveryNoteItem::create([
+            'delivery_note_id' => $dn->id,
+            'description' => 'Test Lieferung',
+            'quantity' => 10,
+            'unit' => 'Stueck',
+            'net_price' => 25.00,
+            'vat_rate' => 7.00,
+            'sort_order' => 0,
+        ]);
+
+        $service = app(PdfService::class);
+        $content = $service->generateDeliveryNote($dn);
+
+        $this->assertNotEmpty($content);
+        $this->assertStringStartsWith('%PDF', $content);
+    }
+
+    public function test_draft_invoice_pdf_has_watermark(): void
+    {
+        $customer = Customer::first();
+        $invoice = Invoice::create([
+            'invoice_number' => 'RE-DRAFT-001',
+            'customer_id' => $customer->id,
+            'invoice_date' => now(),
+            'due_date' => now()->addDays(14),
+            'status' => 'draft',
+        ]);
+
+        InvoiceItem::create([
+            'invoice_id' => $invoice->id,
+            'description' => 'Entwurf Artikel',
+            'quantity' => 1,
+            'unit' => 'Stueck',
+            'net_price' => 50.00,
+            'vat_rate' => 19.00,
+            'sort_order' => 0,
+        ]);
+
+        $service = app(PdfService::class);
+        $content = $service->generateInvoice($invoice, isDraft: true);
+
+        $this->assertNotEmpty($content);
+        $this->assertStringStartsWith('%PDF', $content);
+    }
+
+    public function test_company_settings_has_letterhead_fields(): void
+    {
+        $settings = CompanySetting::instance();
+        $settings->update([
+            'letterhead_path' => 'test.pdf',
+            'use_letterhead' => true,
+        ]);
+
+        $settings->refresh();
+        $this->assertEquals('test.pdf', $settings->letterhead_path);
+        $this->assertTrue($settings->use_letterhead);
     }
 }

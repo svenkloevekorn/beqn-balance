@@ -3,8 +3,11 @@
 namespace App\Filament\Resources\DeliveryNotes\Pages;
 
 use App\Filament\Resources\DeliveryNotes\DeliveryNoteResource;
+use App\Services\PdfService;
+use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Filament\Support\Icons\Heroicon;
 
 class EditDeliveryNote extends EditRecord
 {
@@ -13,6 +16,20 @@ class EditDeliveryNote extends EditRecord
     protected function getHeaderActions(): array
     {
         return [
+            Action::make('downloadPdf')
+                ->label(fn () => $this->record->status === 'draft' ? 'Vorschau PDF' : 'PDF herunterladen')
+                ->icon(Heroicon::OutlinedArrowDownTray)
+                ->color(fn () => $this->record->status === 'draft' ? 'gray' : 'success')
+                ->action(function () {
+                    $service = app(PdfService::class);
+                    $isDraft = $this->record->status === 'draft';
+                    $content = $service->generateDeliveryNote($this->record, $isDraft);
+                    $filename = $this->record->delivery_note_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
+
+                    return response()->streamDownload(fn () => print($content), $filename, [
+                        'Content-Type' => 'application/pdf',
+                    ]);
+                }),
             DeleteAction::make(),
         ];
     }

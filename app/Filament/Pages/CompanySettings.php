@@ -7,6 +7,7 @@ use App\Models\NumberRange;
 use App\Services\NumberFormatService;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Placeholder;
@@ -167,6 +168,21 @@ class CompanySettings extends Page
                             ->imageCropAspectRatio('3:1')
                             ->imageResizeTargetWidth('600')
                             ->imageResizeTargetHeight('200'),
+                    ]),
+
+                Section::make('Briefpapier')
+                    ->description('PDF-Hintergrund fuer Rechnungen, Angebote und Lieferscheine')
+                    ->columns(2)
+                    ->schema([
+                        FileUpload::make('letterhead_path')
+                            ->label('Briefpapier (PDF)')
+                            ->acceptedFileTypes(['application/pdf'])
+                            ->directory('company')
+                            ->maxSize(5120)
+                            ->columnSpan(2),
+                        Checkbox::make('use_letterhead')
+                            ->label('Briefpapier fuer PDF-Export verwenden')
+                            ->columnSpan(2),
                     ]),
             ]);
     }

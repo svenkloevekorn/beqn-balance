@@ -25,7 +25,16 @@ class CompanySetting extends Model
         'iban',
         'bic',
         'logo_path',
+        'letterhead_path',
+        'use_letterhead',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'use_letterhead' => 'boolean',
+        ];
+    }
 
     /**
      * Gibt immer die eine Einstellungs-Instanz zurueck.

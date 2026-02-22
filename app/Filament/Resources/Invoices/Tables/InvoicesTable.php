@@ -2,9 +2,12 @@
 
 namespace App\Filament\Resources\Invoices\Tables;
 
+use App\Services\PdfService;
+use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
@@ -62,6 +65,20 @@ class InvoicesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('downloadPdf')
+                    ->label(fn ($record) => $record->status === 'draft' ? 'Vorschau' : 'PDF')
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->color(fn ($record) => $record->status === 'draft' ? 'gray' : 'success')
+                    ->action(function ($record) {
+                        $service = app(PdfService::class);
+                        $isDraft = $record->status === 'draft';
+                        $content = $service->generateInvoice($record, $isDraft);
+                        $filename = $record->invoice_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
+
+                        return response()->streamDownload(fn () => print($content), $filename, [
+                            'Content-Type' => 'application/pdf',
+                        ]);
+                    }),
             ])
             ->toolbarActions([
                 BulkActionGroup::make([

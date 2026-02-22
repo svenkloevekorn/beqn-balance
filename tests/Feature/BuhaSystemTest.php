@@ -212,11 +212,11 @@ class BuhaSystemTest extends TestCase
     public function test_number_ranges_are_seeded(): void
     {
         $this->assertEquals(5, NumberRange::count());
-        $this->assertDatabaseHas('number_ranges', ['type' => 'invoice', 'prefix' => 'RE']);
-        $this->assertDatabaseHas('number_ranges', ['type' => 'quote', 'prefix' => 'AN']);
-        $this->assertDatabaseHas('number_ranges', ['type' => 'delivery_note', 'prefix' => 'LS']);
-        $this->assertDatabaseHas('number_ranges', ['type' => 'customer', 'prefix' => 'KD']);
-        $this->assertDatabaseHas('number_ranges', ['type' => 'article', 'prefix' => 'ART']);
+        $this->assertDatabaseHas('number_ranges', ['type' => 'invoice', 'format' => 'RE-{jjjj}-{jz,4}']);
+        $this->assertDatabaseHas('number_ranges', ['type' => 'quote', 'format' => 'AN-{jjjj}-{jz,4}']);
+        $this->assertDatabaseHas('number_ranges', ['type' => 'delivery_note', 'format' => 'LS-{jjjj}-{jz,4}']);
+        $this->assertDatabaseHas('number_ranges', ['type' => 'customer', 'format' => 'KD-{z,4}']);
+        $this->assertDatabaseHas('number_ranges', ['type' => 'article', 'format' => 'ART-{z,4}']);
     }
 
     public function test_number_range_generates_with_year(): void
@@ -242,10 +242,10 @@ class BuhaSystemTest extends TestCase
     public function test_number_range_without_year(): void
     {
         $number = NumberRange::generateNext('customer');
-        $this->assertEquals('KD-1001', $number);
+        $this->assertEquals('KD-0001', $number);
 
         $number2 = NumberRange::generateNext('customer');
-        $this->assertEquals('KD-1002', $number2);
+        $this->assertEquals('KD-0002', $number2);
     }
 
     public function test_number_range_preview_does_not_increment(): void
@@ -255,6 +255,24 @@ class BuhaSystemTest extends TestCase
         $preview2 = $range->previewNext();
 
         $this->assertEquals($preview1, $preview2);
+
+        // Zaehler darf sich nicht veraendert haben
+        $range->refresh();
+        $this->assertEquals(0, $range->counter_yearly);
+    }
+
+    public function test_number_range_yearly_reset(): void
+    {
+        $range = NumberRange::where('type', 'invoice')->first();
+
+        // Simuliere: letztes Jahr wurde gezaehlt
+        $range->update([
+            'counter_yearly' => 50,
+            'last_reset_year' => now()->year - 1,
+        ]);
+
+        $number = NumberRange::generateNext('invoice');
+        $this->assertStringEndsWith('-0001', $number);
     }
 
     public function test_invoice_generate_number_uses_number_range(): void

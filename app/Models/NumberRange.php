@@ -2,85 +2,146 @@
 
 namespace App\Models;
 
+use App\Services\NumberFormatService;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class NumberRange extends Model
 {
     protected $fillable = [
         'type',
         'label',
-        'prefix',
-        'include_year',
-        'next_number',
-        'digits',
-        'reset_yearly',
+        'format',
+        'counter_global',
+        'counter_yearly',
+        'counter_monthly',
+        'counter_daily',
         'last_reset_year',
+        'last_reset_month',
+        'last_reset_day',
     ];
 
     protected function casts(): array
     {
         return [
-            'include_year' => 'boolean',
-            'reset_yearly' => 'boolean',
-            'next_number' => 'integer',
-            'digits' => 'integer',
+            'counter_global' => 'integer',
+            'counter_yearly' => 'integer',
+            'counter_monthly' => 'integer',
+            'counter_daily' => 'integer',
+            'last_reset_year' => 'integer',
+            'last_reset_month' => 'integer',
+            'last_reset_day' => 'integer',
         ];
     }
 
     /**
      * Generiert die naechste Nummer fuer den angegebenen Typ.
-     *
-     * Beispiel: RE-2026-0001, AN-2026-0002, KD-1001
+     * Race-Condition-sicher durch DB-Transaktion + Row-Lock.
      */
-    public static function generateNext(string $type): string
+    public static function generateNext(string $type, ?Carbon $date = null): string
     {
-        $range = static::where('type', $type)->lockForUpdate()->firstOrFail();
+        $date ??= Carbon::now();
+        $service = app(NumberFormatService::class);
 
-        $year = now()->year;
+        return DB::transaction(function () use ($type, $date, $service) {
+            $range = static::where('type', $type)->lockForUpdate()->firstOrFail();
 
-        // Jaehrlichen Reset pruefen
-        if ($range->reset_yearly && $range->last_reset_year !== $year) {
-            $range->next_number = 1;
-            $range->last_reset_year = $year;
-        }
+            $range->resetCountersIfNeeded($date, $service);
+            $range->incrementRequiredCounters($service);
+            $range->save();
 
-        $number = $range->next_number;
-        $range->increment('next_number');
-        $range->update(['last_reset_year' => $year]);
-
-        // Nummer formatieren
-        $formatted = $range->digits > 0
-            ? str_pad($number, $range->digits, '0', STR_PAD_LEFT)
-            : (string) $number;
-
-        if ($range->include_year) {
-            return "{$range->prefix}-{$year}-{$formatted}";
-        }
-
-        return "{$range->prefix}-{$formatted}";
+            return $service->generate($range->format, $range->getCounterValues(), $date);
+        });
     }
 
     /**
-     * Zeigt eine Vorschau der naechsten Nummer (ohne zu inkrementieren).
+     * Vorschau der naechsten Nummer (ohne Zaehler zu erhoehen).
      */
-    public function previewNext(): string
+    public function previewNext(?Carbon $date = null): string
     {
-        $year = now()->year;
-        $number = $this->next_number;
+        $date ??= Carbon::now();
+        $service = app(NumberFormatService::class);
 
-        // Simuliere Reset
-        if ($this->reset_yearly && $this->last_reset_year !== $year) {
-            $number = 1;
+        // Simuliere Reset + Inkrement auf Kopien
+        $counters = $this->getCounterValues();
+        $required = $service->getRequiredCounters($this->format);
+
+        foreach ($required as $counterName) {
+            $resetType = $service->getCounterResetType($counterName);
+            $column = $service->getCounterColumn($counterName);
+
+            if ($this->shouldReset($resetType, $date)) {
+                $counters[$column] = 0;
+            }
+
+            $counters[$column]++;
         }
 
-        $formatted = $this->digits > 0
-            ? str_pad($number, $this->digits, '0', STR_PAD_LEFT)
-            : (string) $number;
+        return $service->generate($this->format, $counters, $date);
+    }
 
-        if ($this->include_year) {
-            return "{$this->prefix}-{$year}-{$formatted}";
+    /**
+     * Setzt Zaehler zurueck, falls ein neuer Zeitraum begonnen hat.
+     */
+    protected function resetCountersIfNeeded(Carbon $date, NumberFormatService $service): void
+    {
+        $required = $service->getRequiredCounters($this->format);
+
+        foreach ($required as $counterName) {
+            $resetType = $service->getCounterResetType($counterName);
+            $column = $service->getCounterColumn($counterName);
+
+            if ($this->shouldReset($resetType, $date)) {
+                $this->{$column} = 0;
+            }
         }
 
-        return "{$this->prefix}-{$formatted}";
+        // Reset-Zeitstempel aktualisieren
+        $this->last_reset_year = $date->year;
+        $this->last_reset_month = $date->month;
+        $this->last_reset_day = $date->day;
+    }
+
+    /**
+     * Prueft ob ein Zaehler zurueckgesetzt werden muss.
+     */
+    protected function shouldReset(string $resetType, Carbon $date): bool
+    {
+        return match ($resetType) {
+            'year' => $this->last_reset_year !== $date->year,
+            'month' => $this->last_reset_year !== $date->year
+                || $this->last_reset_month !== $date->month,
+            'day' => $this->last_reset_year !== $date->year
+                || $this->last_reset_month !== $date->month
+                || $this->last_reset_day !== $date->day,
+            default => false, // 'none' = kein Reset
+        };
+    }
+
+    /**
+     * Inkrementiert alle im Format benoetigten Zaehler.
+     */
+    protected function incrementRequiredCounters(NumberFormatService $service): void
+    {
+        $required = $service->getRequiredCounters($this->format);
+
+        foreach ($required as $counterName) {
+            $column = $service->getCounterColumn($counterName);
+            $this->{$column}++;
+        }
+    }
+
+    /**
+     * Gibt die aktuellen Zaehlerstaende als Array zurueck.
+     */
+    public function getCounterValues(): array
+    {
+        return [
+            'counter_global' => $this->counter_global,
+            'counter_yearly' => $this->counter_yearly,
+            'counter_monthly' => $this->counter_monthly,
+            'counter_daily' => $this->counter_daily,
+        ];
     }
 }

@@ -12,8 +12,8 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Get;
-use Filament\Forms\Set;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -67,12 +67,9 @@ class InvoiceForm
                             ])
                             ->default('draft')
                             ->required(),
-                        Textarea::make('notes')
-                            ->label('Bemerkungen')
-                            ->rows(3)
-                            ->columnSpanFull(),
                     ]),
                 Section::make('Positionen')
+                    ->columnSpanFull()
                     ->schema([
                         Repeater::make('items')
                             ->label('')
@@ -140,6 +137,16 @@ class InvoiceForm
                             ->addActionLabel('Position hinzufügen')
                             ->columnSpanFull(),
                     ]),
+                Section::make('Bemerkungen')
+                    ->columnSpanFull()
+                    ->schema([
+                        Textarea::make('notes')
+                            ->label('')
+                            ->rows(3)
+                            ->placeholder('Bemerkungen zur Rechnung...')
+                            ->columnSpanFull(),
+                    ])
+                    ->collapsed(),
             ]);
     }
 }

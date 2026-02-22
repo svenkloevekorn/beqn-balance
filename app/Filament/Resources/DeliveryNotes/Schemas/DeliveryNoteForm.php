@@ -10,7 +10,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Set;
+use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -51,6 +51,7 @@ class DeliveryNoteForm
                             ->required(),
                     ]),
                 Section::make('Positionen')
+                    ->columnSpanFull()
                     ->schema([
                         Repeater::make('items')
                             ->label('')
@@ -119,6 +120,7 @@ class DeliveryNoteForm
                             ->columnSpanFull(),
                     ]),
                 Section::make('Bemerkungen')
+                    ->columnSpanFull()
                     ->schema([
                         Textarea::make('notes')
                             ->label('')

@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\CompanySetting;
 use App\Models\Customer;
 use App\Models\IncomingInvoice;
@@ -357,5 +358,98 @@ class BuhaSystemTest extends TestCase
     public function test_seeder_creates_articles(): void
     {
         $this->assertGreaterThanOrEqual(4, Article::count());
+    }
+
+    // --- Kategorie Tests ---
+
+    public function test_category_can_be_created(): void
+    {
+        $category = Category::create([
+            'name' => 'Testkategorie',
+            'description' => 'Eine Testkategorie',
+            'color' => '#ff0000',
+        ]);
+
+        $this->assertDatabaseHas('categories', ['name' => 'Testkategorie']);
+        $this->assertEquals('#ff0000', $category->color);
+    }
+
+    public function test_article_can_have_categories(): void
+    {
+        $category1 = Category::create(['name' => 'Kat A']);
+        $category2 = Category::create(['name' => 'Kat B']);
+
+        $article = Article::create([
+            'name' => 'Multi-Kat Artikel',
+            'unit' => 'Stück',
+            'net_price' => 10.00,
+            'vat_rate' => 19.00,
+        ]);
+
+        $article->categories()->attach([$category1->id, $category2->id]);
+
+        $this->assertCount(2, $article->categories);
+        $this->assertTrue($article->categories->contains($category1));
+        $this->assertTrue($article->categories->contains($category2));
+    }
+
+    public function test_category_has_articles(): void
+    {
+        $category = Category::create(['name' => 'Testkat']);
+
+        $article1 = Article::create([
+            'name' => 'Artikel A',
+            'unit' => 'Stück',
+            'net_price' => 5.00,
+            'vat_rate' => 19.00,
+        ]);
+
+        $article2 = Article::create([
+            'name' => 'Artikel B',
+            'unit' => 'Stück',
+            'net_price' => 15.00,
+            'vat_rate' => 19.00,
+        ]);
+
+        $category->articles()->attach([$article1->id, $article2->id]);
+
+        $this->assertCount(2, $category->articles);
+    }
+
+    public function test_seeder_creates_categories(): void
+    {
+        $this->assertGreaterThanOrEqual(6, Category::count());
+        $this->assertDatabaseHas('categories', ['name' => 'Kaffee']);
+        $this->assertDatabaseHas('categories', ['name' => 'Equipment']);
+        $this->assertDatabaseHas('categories', ['name' => 'Dienstleistung']);
+    }
+
+    public function test_seeded_articles_have_categories(): void
+    {
+        $articles = Article::has('categories')->get();
+        $this->assertGreaterThanOrEqual(4, $articles->count());
+    }
+
+    public function test_categories_page_accessible_when_logged_in(): void
+    {
+        $user = User::first();
+        $this->actingAs($user)->get('/admin/categories')->assertOk();
+    }
+
+    public function test_deleting_category_detaches_articles(): void
+    {
+        $category = Category::create(['name' => 'Temp-Kat']);
+        $article = Article::create([
+            'name' => 'Temp-Artikel',
+            'unit' => 'Stück',
+            'net_price' => 1.00,
+            'vat_rate' => 19.00,
+        ]);
+        $article->categories()->attach($category->id);
+
+        $category->delete();
+
+        $this->assertDatabaseMissing('article_category', ['category_id' => $category->id]);
+        $this->assertDatabaseHas('articles', ['name' => 'Temp-Artikel']);
     }
 }

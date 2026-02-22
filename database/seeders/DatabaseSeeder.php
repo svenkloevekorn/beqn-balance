@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Models\Article;
+use App\Models\Category;
 use App\Models\Customer;
 use App\Models\Supplier;
 use App\Models\User;
@@ -81,37 +82,96 @@ class DatabaseSeeder extends Seeder
             'payment_term_days' => 30,
         ]);
 
+        // Kategorien (Kaffee-Roesterei)
+        $kaffee = Category::create([
+            'name' => 'Kaffee',
+            'description' => 'Roestkaffee, Bohnen und gemahlener Kaffee',
+            'color' => '#8B4513',
+        ]);
+
+        $equipment = Category::create([
+            'name' => 'Equipment',
+            'description' => 'Muehlen, Maschinen und Zubehoer',
+            'color' => '#6B7280',
+        ]);
+
+        $verpackung = Category::create([
+            'name' => 'Verpackung',
+            'description' => 'Tueten, Etiketten und Verpackungsmaterial',
+            'color' => '#16A34A',
+        ]);
+
+        $dienstleistung = Category::create([
+            'name' => 'Dienstleistung',
+            'description' => 'Beratung, Schulungen und Barista-Kurse',
+            'color' => '#2563EB',
+        ]);
+
+        $merchandise = Category::create([
+            'name' => 'Merchandise',
+            'description' => 'Tassen, Bekleidung und Geschenkartikel',
+            'color' => '#EA580C',
+        ]);
+
+        $rohkaffee = Category::create([
+            'name' => 'Rohkaffee',
+            'description' => 'Gruener Rohkaffee, ungeröstet',
+            'color' => '#65A30D',
+        ]);
+
         // Artikel
-        Article::create([
-            'name' => 'Webentwicklung',
-            'description' => 'Frontend- und Backend-Entwicklung pro Stunde',
-            'unit' => 'Stunde',
-            'net_price' => 95.00,
-            'vat_rate' => 19.00,
-        ]);
-
-        Article::create([
-            'name' => 'Beratung',
-            'description' => 'IT-Beratung und Projektmanagement',
-            'unit' => 'Stunde',
-            'net_price' => 120.00,
-            'vat_rate' => 19.00,
-        ]);
-
-        Article::create([
-            'name' => 'Hosting Paket Standard',
-            'description' => 'Webhosting inkl. Domain und SSL',
+        $a1 = Article::create([
+            'name' => 'Hausmischung 250g',
+            'description' => 'Unsere beliebte Hausmischung, ganze Bohne',
             'unit' => 'Stück',
-            'net_price' => 29.90,
-            'vat_rate' => 19.00,
+            'net_price' => 8.90,
+            'vat_rate' => 7.00,
         ]);
+        $a1->categories()->attach([$kaffee->id]);
 
-        Article::create([
-            'name' => 'Logo-Design',
-            'description' => 'Erstellung eines individuellen Logos',
+        $a2 = Article::create([
+            'name' => 'Espresso Intenso 1kg',
+            'description' => 'Kraeftiger Espresso, dunkle Roestung',
+            'unit' => 'Stück',
+            'net_price' => 28.00,
+            'vat_rate' => 7.00,
+        ]);
+        $a2->categories()->attach([$kaffee->id]);
+
+        $a3 = Article::create([
+            'name' => 'Barista-Kurs Einsteiger',
+            'description' => 'Halbtaegiger Workshop fuer Einsteiger',
             'unit' => 'Pauschal',
-            'net_price' => 450.00,
+            'net_price' => 89.00,
             'vat_rate' => 19.00,
         ]);
+        $a3->categories()->attach([$dienstleistung->id]);
+
+        $a4 = Article::create([
+            'name' => 'Kaffeebeutel 250g mit Ventil',
+            'description' => 'Standbodenbeutel mit Aromaventil, 100 Stueck',
+            'unit' => 'Stück',
+            'net_price' => 45.00,
+            'vat_rate' => 19.00,
+        ]);
+        $a4->categories()->attach([$verpackung->id]);
+
+        $a5 = Article::create([
+            'name' => 'Keramiktasse mit Logo',
+            'description' => 'Handgefertigte Tasse mit Roesterei-Logo',
+            'unit' => 'Stück',
+            'net_price' => 12.50,
+            'vat_rate' => 19.00,
+        ]);
+        $a5->categories()->attach([$merchandise->id]);
+
+        $a6 = Article::create([
+            'name' => 'Handmuehle Comandante',
+            'description' => 'Hochwertige Handkaffeemuehle',
+            'unit' => 'Stück',
+            'net_price' => 210.00,
+            'vat_rate' => 19.00,
+        ]);
+        $a6->categories()->attach([$equipment->id]);
     }
 }

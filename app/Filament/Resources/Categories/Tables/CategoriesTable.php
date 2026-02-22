@@ -1,38 +1,34 @@
 <?php
 
-namespace App\Filament\Resources\Articles\Tables;
+namespace App\Filament\Resources\Categories\Tables;
 
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\ColorColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
-class ArticlesTable
+class CategoriesTable
 {
     public static function configure(Table $table): Table
     {
         return $table
             ->columns([
+                ColorColumn::make('color')
+                    ->label('Farbe')
+                    ->sortable(),
                 TextColumn::make('name')
-                    ->label('Bezeichnung')
+                    ->label('Name')
                     ->searchable()
                     ->sortable(),
-                TextColumn::make('categories.name')
-                    ->label('Kategorien')
-                    ->badge()
-                    ->separator(',')
+                TextColumn::make('description')
+                    ->label('Beschreibung')
+                    ->limit(50)
                     ->searchable(),
-                TextColumn::make('unit')
-                    ->label('Einheit')
-                    ->sortable(),
-                TextColumn::make('net_price')
-                    ->label('Nettopreis')
-                    ->money('EUR')
-                    ->sortable(),
-                TextColumn::make('vat_rate')
-                    ->label('MwSt')
-                    ->suffix(' %')
+                TextColumn::make('articles_count')
+                    ->label('Artikel')
+                    ->counts('articles')
                     ->sortable(),
             ])
             ->recordActions([

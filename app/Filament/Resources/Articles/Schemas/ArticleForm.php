@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Articles\Schemas;
 
+use App\Models\Category;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -17,6 +18,19 @@ class ArticleForm
                     ->label('Bezeichnung')
                     ->required()
                     ->maxLength(255),
+                Select::make('categories')
+                    ->label('Kategorien')
+                    ->relationship('categories', 'name')
+                    ->multiple()
+                    ->required()
+                    ->preload()
+                    ->createOptionForm([
+                        TextInput::make('name')
+                            ->label('Name')
+                            ->required()
+                            ->unique()
+                            ->maxLength(255),
+                    ]),
                 Textarea::make('description')
                     ->label('Beschreibung')
                     ->rows(3)

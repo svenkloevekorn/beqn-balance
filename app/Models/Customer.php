@@ -40,4 +40,14 @@ class Customer extends Model
     {
         return $this->hasMany(ContactPerson::class);
     }
+
+    public function quotes(): HasMany
+    {
+        return $this->hasMany(Quote::class);
+    }
+
+    public function deliveryNotes(): HasMany
+    {
+        return $this->hasMany(DeliveryNote::class);
+    }
 }

@@ -7,10 +7,14 @@ use App\Models\Category;
 use App\Models\CompanySetting;
 use App\Models\ContactPerson;
 use App\Models\Customer;
+use App\Models\DeliveryNote;
+use App\Models\DeliveryNoteItem;
 use App\Models\IncomingInvoice;
 use App\Models\Invoice;
 use App\Models\InvoiceItem;
 use App\Models\NumberRange;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -531,5 +535,198 @@ class BuhaSystemTest extends TestCase
             'name' => 'Mustermann GmbH',
             'discount_percent' => 5.00,
         ]);
+    }
+
+    // --- Angebot Tests ---
+
+    public function test_quote_with_items_calculates_totals(): void
+    {
+        $customer = Customer::first();
+
+        $quote = Quote::create([
+            'quote_number' => 'AN-TEST-0001',
+            'customer_id' => $customer->id,
+            'quote_date' => now(),
+            'valid_until' => now()->addDays(30),
+            'status' => 'draft',
+            'apply_discount' => false,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'description' => 'Kaffee',
+            'quantity' => 10,
+            'unit' => 'Stück',
+            'net_price' => 8.90,
+            'vat_rate' => 7.00,
+            'sort_order' => 0,
+        ]);
+
+        $quote->load('items');
+
+        $this->assertEquals(89.00, $quote->net_total);
+        $this->assertEquals(6.23, $quote->vat_total);
+        $this->assertEquals(95.23, $quote->gross_total);
+    }
+
+    public function test_quote_discount_calculation(): void
+    {
+        $customer = Customer::first();
+
+        $quote = Quote::create([
+            'quote_number' => 'AN-TEST-0002',
+            'customer_id' => $customer->id,
+            'quote_date' => now(),
+            'status' => 'draft',
+            'apply_discount' => true,
+            'discount_percent' => 10.00,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'description' => 'Artikel',
+            'quantity' => 1,
+            'net_price' => 100.00,
+            'vat_rate' => 19.00,
+            'sort_order' => 0,
+        ]);
+
+        $quote->load('items');
+
+        $this->assertEquals(100.00, $quote->net_total);
+        $this->assertEquals(10.00, $quote->discount_amount);
+        $this->assertEquals(90.00, $quote->net_total_after_discount);
+    }
+
+    public function test_quote_without_discount(): void
+    {
+        $customer = Customer::first();
+
+        $quote = Quote::create([
+            'quote_number' => 'AN-TEST-0003',
+            'customer_id' => $customer->id,
+            'quote_date' => now(),
+            'status' => 'draft',
+            'apply_discount' => false,
+            'discount_percent' => 10.00,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'description' => 'Artikel',
+            'quantity' => 1,
+            'net_price' => 100.00,
+            'vat_rate' => 19.00,
+            'sort_order' => 0,
+        ]);
+
+        $quote->load('items');
+
+        $this->assertEquals(0, $quote->discount_amount);
+        $this->assertEquals(100.00, $quote->net_total_after_discount);
+    }
+
+    public function test_quote_generate_number(): void
+    {
+        $year = now()->year;
+        $number = Quote::generateQuoteNumber();
+        $this->assertStringStartsWith("AN-{$year}-", $number);
+    }
+
+    public function test_customer_has_quotes_relationship(): void
+    {
+        $customer = Customer::where('name', 'Mustermann GmbH')->first();
+        $this->assertGreaterThanOrEqual(1, $customer->quotes->count());
+    }
+
+    public function test_quotes_page_accessible_when_logged_in(): void
+    {
+        $user = User::first();
+        $this->actingAs($user)->get('/admin/quotes')->assertOk();
+    }
+
+    public function test_seeder_creates_quote(): void
+    {
+        $this->assertDatabaseHas('quotes', ['quote_number' => 'AN-2026-0001']);
+        $this->assertGreaterThanOrEqual(2, QuoteItem::count());
+    }
+
+    // --- Lieferschein Tests ---
+
+    public function test_delivery_note_with_items_calculates_totals(): void
+    {
+        $customer = Customer::first();
+
+        $note = DeliveryNote::create([
+            'delivery_note_number' => 'LS-TEST-0001',
+            'customer_id' => $customer->id,
+            'delivery_date' => now(),
+            'status' => 'draft',
+        ]);
+
+        DeliveryNoteItem::create([
+            'delivery_note_id' => $note->id,
+            'description' => 'Espresso 1kg',
+            'quantity' => 5,
+            'unit' => 'Stück',
+            'net_price' => 28.00,
+            'vat_rate' => 7.00,
+            'sort_order' => 0,
+        ]);
+
+        $note->load('items');
+
+        $this->assertEquals(140.00, $note->net_total);
+        $this->assertEquals(9.80, $note->vat_total);
+        $this->assertEquals(149.80, $note->gross_total);
+    }
+
+    public function test_delivery_note_generate_number(): void
+    {
+        $year = now()->year;
+        $number = DeliveryNote::generateDeliveryNoteNumber();
+        $this->assertStringStartsWith("LS-{$year}-", $number);
+    }
+
+    public function test_customer_has_delivery_notes_relationship(): void
+    {
+        $customer = Customer::where('name', 'Beispiel AG')->first();
+        $this->assertGreaterThanOrEqual(1, $customer->deliveryNotes->count());
+    }
+
+    public function test_delivery_notes_page_accessible_when_logged_in(): void
+    {
+        $user = User::first();
+        $this->actingAs($user)->get('/admin/delivery-notes')->assertOk();
+    }
+
+    public function test_seeder_creates_delivery_note(): void
+    {
+        $this->assertDatabaseHas('delivery_notes', ['delivery_note_number' => 'LS-2026-0001']);
+        $this->assertGreaterThanOrEqual(1, DeliveryNoteItem::count());
+    }
+
+    public function test_deleting_quote_deletes_items(): void
+    {
+        $customer = Customer::first();
+        $quote = Quote::create([
+            'quote_number' => 'AN-TEST-DEL',
+            'customer_id' => $customer->id,
+            'quote_date' => now(),
+            'status' => 'draft',
+        ]);
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'description' => 'Temp',
+            'quantity' => 1,
+            'net_price' => 10,
+            'vat_rate' => 19,
+            'sort_order' => 0,
+        ]);
+
+        $quoteId = $quote->id;
+        $quote->delete();
+
+        $this->assertDatabaseMissing('quote_items', ['quote_id' => $quoteId]);
     }
 }

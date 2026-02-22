@@ -6,6 +6,10 @@ use App\Models\Article;
 use App\Models\Category;
 use App\Models\ContactPerson;
 use App\Models\Customer;
+use App\Models\DeliveryNote;
+use App\Models\DeliveryNoteItem;
+use App\Models\Quote;
+use App\Models\QuoteItem;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -200,5 +204,57 @@ class DatabaseSeeder extends Seeder
             'vat_rate' => 19.00,
         ]);
         $a6->categories()->attach([$equipment->id]);
+
+        // Angebot
+        $quote = Quote::create([
+            'quote_number' => 'AN-2026-0001',
+            'customer_id' => $mustermann->id,
+            'quote_date' => now(),
+            'valid_until' => now()->addDays(30),
+            'status' => 'sent',
+            'apply_discount' => true,
+            'discount_percent' => $mustermann->discount_percent,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'article_id' => $a1->id,
+            'description' => 'Hausmischung 250g',
+            'quantity' => 50,
+            'unit' => 'Stück',
+            'net_price' => 8.90,
+            'vat_rate' => 7.00,
+            'sort_order' => 0,
+        ]);
+
+        QuoteItem::create([
+            'quote_id' => $quote->id,
+            'article_id' => $a5->id,
+            'description' => 'Keramiktasse mit Logo',
+            'quantity' => 20,
+            'unit' => 'Stück',
+            'net_price' => 12.50,
+            'vat_rate' => 19.00,
+            'sort_order' => 1,
+        ]);
+
+        // Lieferschein
+        $deliveryNote = DeliveryNote::create([
+            'delivery_note_number' => 'LS-2026-0001',
+            'customer_id' => $beispiel->id,
+            'delivery_date' => now(),
+            'status' => 'delivered',
+        ]);
+
+        DeliveryNoteItem::create([
+            'delivery_note_id' => $deliveryNote->id,
+            'article_id' => $a2->id,
+            'description' => 'Espresso Intenso 1kg',
+            'quantity' => 10,
+            'unit' => 'Stück',
+            'net_price' => 28.00,
+            'vat_rate' => 7.00,
+            'sort_order' => 0,
+        ]);
     }
 }

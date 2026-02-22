@@ -20,7 +20,7 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
-class BuhaSystemTest extends TestCase
+class BalanceTest extends TestCase
 {
     use RefreshDatabase;
 

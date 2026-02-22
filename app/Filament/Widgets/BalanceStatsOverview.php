@@ -7,7 +7,7 @@ use App\Models\Invoice;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class BuhaStatsOverview extends StatsOverviewWidget
+class BalanceStatsOverview extends StatsOverviewWidget
 {
     protected static ?int $sort = -2;
 

@@ -10,7 +10,7 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use App\Filament\Widgets\BuhaStatsOverview;
+use App\Filament\Widgets\BalanceStatsOverview;
 use Filament\Navigation\NavigationGroup;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -29,7 +29,7 @@ class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
-            ->brandName('Buha System')
+            ->brandName('balance by BEQN')
             ->colors([
                 'primary' => Color::Amber,
             ])
@@ -47,7 +47,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\Filament\Widgets')
             ->widgets([
-                BuhaStatsOverview::class,
+                BalanceStatsOverview::class,
                 AccountWidget::class,
             ])
             ->middleware([

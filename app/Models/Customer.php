@@ -20,10 +20,24 @@ class Customer extends Model
         'phone',
         'vat_id',
         'payment_term_days',
+        'discount_percent',
+        'notes',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'discount_percent' => 'decimal:2',
+        ];
+    }
 
     public function invoices(): HasMany
     {
         return $this->hasMany(Invoice::class);
+    }
+
+    public function contactPersons(): HasMany
+    {
+        return $this->hasMany(ContactPerson::class);
     }
 }

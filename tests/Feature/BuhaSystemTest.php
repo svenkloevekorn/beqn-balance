@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Article;
 use App\Models\Category;
 use App\Models\CompanySetting;
+use App\Models\ContactPerson;
 use App\Models\Customer;
 use App\Models\IncomingInvoice;
 use App\Models\Invoice;
@@ -451,5 +452,84 @@ class BuhaSystemTest extends TestCase
 
         $this->assertDatabaseMissing('article_category', ['category_id' => $category->id]);
         $this->assertDatabaseHas('articles', ['name' => 'Temp-Artikel']);
+    }
+
+    // --- Ansprechpartner Tests ---
+
+    public function test_customer_can_have_contact_persons(): void
+    {
+        $customer = Customer::first();
+
+        $contact = ContactPerson::create([
+            'customer_id' => $customer->id,
+            'name' => 'Test Kontakt',
+            'position' => 'Einkauf',
+            'email' => 'kontakt@test.de',
+            'phone' => '0123 456789',
+        ]);
+
+        $this->assertDatabaseHas('contact_persons', ['name' => 'Test Kontakt']);
+        $this->assertTrue($customer->contactPersons->contains($contact));
+        $this->assertEquals($customer->id, $contact->customer->id);
+    }
+
+    public function test_deleting_customer_deletes_contact_persons(): void
+    {
+        $customer = Customer::create([
+            'name' => 'Temp Kunde',
+            'city' => 'Berlin',
+            'country' => 'DE',
+            'payment_term_days' => 14,
+        ]);
+
+        ContactPerson::create([
+            'customer_id' => $customer->id,
+            'name' => 'Temp Kontakt',
+        ]);
+
+        $customerId = $customer->id;
+        $customer->delete();
+
+        $this->assertDatabaseMissing('contact_persons', ['customer_id' => $customerId]);
+    }
+
+    public function test_customer_has_discount_percent(): void
+    {
+        $customer = Customer::create([
+            'name' => 'Rabatt Kunde',
+            'city' => 'Berlin',
+            'country' => 'DE',
+            'payment_term_days' => 14,
+            'discount_percent' => 7.50,
+        ]);
+
+        $this->assertEquals('7.50', $customer->discount_percent);
+    }
+
+    public function test_customer_has_notes(): void
+    {
+        $customer = Customer::create([
+            'name' => 'Notiz Kunde',
+            'city' => 'Berlin',
+            'country' => 'DE',
+            'payment_term_days' => 14,
+            'notes' => 'Wichtiger Hinweis',
+        ]);
+
+        $this->assertEquals('Wichtiger Hinweis', $customer->notes);
+    }
+
+    public function test_seeder_creates_contact_persons(): void
+    {
+        $this->assertGreaterThanOrEqual(3, ContactPerson::count());
+        $this->assertDatabaseHas('contact_persons', ['name' => 'Max Mustermann']);
+    }
+
+    public function test_seeder_creates_customer_with_discount(): void
+    {
+        $this->assertDatabaseHas('customers', [
+            'name' => 'Mustermann GmbH',
+            'discount_percent' => 5.00,
+        ]);
     }
 }

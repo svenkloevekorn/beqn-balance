@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\ContactPerson;
 use App\Models\Customer;
 use App\Models\Supplier;
 use App\Models\User;
@@ -22,7 +23,7 @@ class DatabaseSeeder extends Seeder
         ]);
 
         // Kunden
-        Customer::create([
+        $mustermann = Customer::create([
             'name' => 'Mustermann GmbH',
             'street' => 'Musterstraße 1',
             'zip' => '10115',
@@ -32,9 +33,27 @@ class DatabaseSeeder extends Seeder
             'phone' => '030 12345678',
             'vat_id' => 'DE123456789',
             'payment_term_days' => 14,
+            'discount_percent' => 5.00,
+            'notes' => 'Stammkunde seit 2024, bevorzugt Hausmischung',
         ]);
 
-        Customer::create([
+        ContactPerson::create([
+            'customer_id' => $mustermann->id,
+            'name' => 'Max Mustermann',
+            'position' => 'Geschaeftsfuehrer',
+            'email' => 'max@mustermann.de',
+            'phone' => '030 12345678',
+        ]);
+
+        ContactPerson::create([
+            'customer_id' => $mustermann->id,
+            'name' => 'Erika Mustermann',
+            'position' => 'Einkauf',
+            'email' => 'erika@mustermann.de',
+            'phone' => '030 12345679',
+        ]);
+
+        $beispiel = Customer::create([
             'name' => 'Beispiel AG',
             'street' => 'Beispielweg 42',
             'zip' => '80331',
@@ -44,6 +63,14 @@ class DatabaseSeeder extends Seeder
             'phone' => '089 98765432',
             'vat_id' => 'DE987654321',
             'payment_term_days' => 30,
+            'discount_percent' => 10.00,
+        ]);
+
+        ContactPerson::create([
+            'customer_id' => $beispiel->id,
+            'name' => 'Anna Schmidt',
+            'position' => 'Bueroleitung',
+            'email' => 'a.schmidt@beispiel-ag.de',
         ]);
 
         Customer::create([

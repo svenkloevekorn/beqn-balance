@@ -15,6 +15,7 @@ use App\Models\InvoiceItem;
 use App\Models\NumberRange;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\Role;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -728,5 +729,146 @@ class BalanceTest extends TestCase
         $quote->delete();
 
         $this->assertDatabaseMissing('quote_items', ['quote_id' => $quoteId]);
+    }
+
+    // --- Rollen & Berechtigungen Tests ---
+
+    public function test_role_can_be_created(): void
+    {
+        $role = Role::create([
+            'name' => 'Testrole',
+            'permissions' => [
+                'customers' => ['view' => true, 'create' => true, 'update' => false, 'delete' => false],
+            ],
+        ]);
+
+        $this->assertDatabaseHas('roles', ['name' => 'Testrole']);
+        $this->assertTrue($role->hasPermission('customers', 'view'));
+        $this->assertTrue($role->hasPermission('customers', 'create'));
+        $this->assertFalse($role->hasPermission('customers', 'update'));
+        $this->assertFalse($role->hasPermission('customers', 'delete'));
+    }
+
+    public function test_super_admin_role_has_all_permissions(): void
+    {
+        $role = Role::create([
+            'name' => 'Super',
+            'permissions' => [],
+            'is_super_admin' => true,
+        ]);
+
+        $this->assertTrue($role->hasPermission('customers', 'view'));
+        $this->assertTrue($role->hasPermission('invoices', 'delete'));
+        $this->assertTrue($role->hasPermission('settings', 'update'));
+    }
+
+    public function test_user_belongs_to_role(): void
+    {
+        $role = Role::create(['name' => 'Helfer', 'permissions' => []]);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->assertEquals('Helfer', $user->role->name);
+        $this->assertTrue($role->users->contains($user));
+    }
+
+    public function test_user_has_permission_via_role(): void
+    {
+        $role = Role::create([
+            'name' => 'Leser',
+            'permissions' => [
+                'customers' => ['view' => true],
+                'invoices' => ['view' => true, 'create' => true],
+            ],
+        ]);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $this->assertTrue($user->hasPermission('customers', 'view'));
+        $this->assertFalse($user->hasPermission('customers', 'create'));
+        $this->assertTrue($user->hasPermission('invoices', 'create'));
+        $this->assertFalse($user->hasPermission('articles', 'view'));
+    }
+
+    public function test_user_without_role_has_no_permissions(): void
+    {
+        $user = User::factory()->create(['role_id' => null]);
+
+        $this->assertFalse($user->hasPermission('customers', 'view'));
+        $this->assertFalse($user->hasPermission('invoices', 'create'));
+    }
+
+    public function test_super_admin_user_has_all_permissions(): void
+    {
+        $user = User::factory()->create([
+            'is_super_admin' => true,
+            'role_id' => null,
+        ]);
+
+        $this->assertTrue($user->hasPermission('customers', 'view'));
+        $this->assertTrue($user->hasPermission('settings', 'delete'));
+        $this->assertTrue($user->isSuperAdmin());
+    }
+
+    public function test_seeder_creates_roles(): void
+    {
+        $this->assertDatabaseHas('roles', ['name' => 'Administrator', 'is_super_admin' => true]);
+        $this->assertDatabaseHas('roles', ['name' => 'Buchhalter']);
+        $this->assertDatabaseHas('roles', ['name' => 'Mitarbeiter']);
+        $this->assertGreaterThanOrEqual(3, Role::count());
+    }
+
+    public function test_seeder_creates_super_admin_user(): void
+    {
+        $user = User::where('email', 'test@example.com')->first();
+
+        $this->assertNotNull($user);
+        $this->assertTrue($user->is_super_admin);
+        $this->assertNotNull($user->role_id);
+        $this->assertEquals('Administrator', $user->role->name);
+    }
+
+    public function test_users_page_accessible_when_logged_in(): void
+    {
+        $user = User::where('email', 'test@example.com')->first();
+
+        $response = $this->actingAs($user)->get('/admin/users');
+        $response->assertOk();
+    }
+
+    public function test_roles_page_accessible_when_logged_in(): void
+    {
+        $user = User::where('email', 'test@example.com')->first();
+
+        $response = $this->actingAs($user)->get('/admin/roles');
+        $response->assertOk();
+    }
+
+    public function test_restricted_user_cannot_access_customers(): void
+    {
+        $role = Role::create([
+            'name' => 'Kein Zugriff',
+            'permissions' => [],
+        ]);
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->get('/admin/customers');
+        $response->assertForbidden();
+    }
+
+    public function test_buchhalter_can_access_customers(): void
+    {
+        $role = Role::where('name', 'Buchhalter')->first();
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->get('/admin/customers');
+        $response->assertOk();
+    }
+
+    public function test_mitarbeiter_cannot_access_settings(): void
+    {
+        $role = Role::where('name', 'Mitarbeiter')->first();
+        $user = User::factory()->create(['role_id' => $role->id]);
+
+        $response = $this->actingAs($user)->get('/admin/company-settings');
+        $response->assertForbidden();
     }
 }

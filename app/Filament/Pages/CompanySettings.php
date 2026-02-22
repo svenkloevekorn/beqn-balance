@@ -36,6 +36,13 @@ class CompanySettings extends Page
 
     protected static ?int $navigationSort = 100;
 
+    public static function canAccess(): bool
+    {
+        $user = auth()->user();
+
+        return $user && $user->hasPermission('settings', 'view');
+    }
+
     protected string $view = 'filament-panels::pages.page';
 
     public ?array $companyData = [];

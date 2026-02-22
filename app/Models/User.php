@@ -6,6 +6,7 @@ namespace App\Models;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 
@@ -23,6 +24,8 @@ class User extends Authenticatable implements FilamentUser
         'name',
         'email',
         'password',
+        'role_id',
+        'is_super_admin',
     ];
 
     /**
@@ -45,11 +48,35 @@ class User extends Authenticatable implements FilamentUser
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'is_super_admin' => 'boolean',
         ];
+    }
+
+    public function role(): BelongsTo
+    {
+        return $this->belongsTo(Role::class);
     }
 
     public function canAccessPanel(Panel $panel): bool
     {
         return true;
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return (bool) $this->is_super_admin;
+    }
+
+    public function hasPermission(string $resource, string $ability): bool
+    {
+        if ($this->isSuperAdmin()) {
+            return true;
+        }
+
+        if (! $this->role) {
+            return false;
+        }
+
+        return $this->role->hasPermission($resource, $ability);
     }
 }

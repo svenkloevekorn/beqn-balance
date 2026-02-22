@@ -10,6 +10,7 @@ use App\Models\DeliveryNote;
 use App\Models\DeliveryNoteItem;
 use App\Models\Quote;
 use App\Models\QuoteItem;
+use App\Models\Role;
 use App\Models\Supplier;
 use App\Models\User;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
@@ -21,9 +22,50 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Rollen
+        $allPermissions = [];
+        foreach (Role::$resources as $resource => $label) {
+            foreach (Role::$abilities as $ability => $abilityLabel) {
+                $allPermissions[$resource][$ability] = true;
+            }
+        }
+
+        $adminRole = Role::create([
+            'name' => 'Administrator',
+            'permissions' => $allPermissions,
+            'is_super_admin' => true,
+        ]);
+
+        $buchhaltungPermissions = [];
+        foreach (['customers', 'suppliers', 'articles', 'categories', 'invoices', 'incoming_invoices', 'quotes', 'delivery_notes'] as $resource) {
+            foreach (Role::$abilities as $ability => $label) {
+                $buchhaltungPermissions[$resource][$ability] = true;
+            }
+        }
+        $buchhaltungPermissions['settings']['view'] = true;
+
+        Role::create([
+            'name' => 'Buchhalter',
+            'permissions' => $buchhaltungPermissions,
+        ]);
+
+        $mitarbeiterPermissions = [];
+        foreach (['customers', 'articles', 'quotes', 'delivery_notes'] as $resource) {
+            $mitarbeiterPermissions[$resource]['view'] = true;
+        }
+        $mitarbeiterPermissions['invoices']['view'] = true;
+
+        Role::create([
+            'name' => 'Mitarbeiter',
+            'permissions' => $mitarbeiterPermissions,
+        ]);
+
+        // Benutzer
         User::factory()->create([
             'name' => 'Test User',
             'email' => 'test@example.com',
+            'role_id' => $adminRole->id,
+            'is_super_admin' => true,
         ]);
 
         // Kunden

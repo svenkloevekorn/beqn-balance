@@ -1,7 +1,19 @@
-# Buha System
+# balance by BEQN
 
-Kleines Buchhaltungssystem, gebaut mit **Laravel 12**, **Filament v5** und **MySQL**.
-Verwaltet Kunden, Lieferanten, Artikel, Ausgangsrechnungen und Eingangsrechnungen.
+Buchhaltungs- und Rechnungssystem fuer kleine Unternehmen, gebaut mit **Laravel 12**, **Filament v5** und **MySQL**.
+
+## Features
+
+- **Kundenverwaltung** -- Kontaktdaten, Ansprechpartner, Zahlungsziel, Kundenrabatt, Notizen
+- **Lieferantenverwaltung** -- Kontaktdaten, Adresse, Zahlungsziel
+- **Artikelverwaltung** -- Kategorien (Many-to-Many), Brutto/Netto-Rechner, MwSt-Saetze
+- **Angebote** -- Positionen, Rabatt (pro Kunde konfigurierbar), Live-Summenberechnung, MwSt-Aufschluesselung
+- **Lieferscheine** -- Positionen mit Mengen, Preisen, MwSt
+- **Ausgangsrechnungen** -- Positionen, automatische Rechnungsnummern
+- **Eingangsrechnungen** -- Lieferantenrechnungen mit Netto/MwSt/Brutto
+- **Nummernkreise** -- Flexibles Platzhalter-Format (`RE-{jjjj}-{jz,4}`) mit Jahres-/Monats-/Tageszaehlern
+- **Firmenstammdaten** -- Logo, Bankverbindung, Steuerdaten
+- **Benutzer- & Rechteverwaltung** -- Flexible Rollen mit CRUD-Berechtigungen pro Bereich, geschuetzter Super-Admin
 
 ## Tech-Stack
 
@@ -18,53 +30,113 @@ Verwaltet Kunden, Lieferanten, Artikel, Ausgangsrechnungen und Eingangsrechnunge
 ```
 app/
 ├── Filament/
+│   ├── Pages/
+│   │   └── CompanySettings.php       # Firmenstammdaten & Nummernkreise
 │   ├── Resources/
-│   │   ├── Articles/          # Artikel-Verwaltung
-│   │   ├── Customers/         # Kunden-Verwaltung
-│   │   ├── IncomingInvoices/  # Eingangsrechnungen
-│   │   ├── Invoices/          # Ausgangsrechnungen
-│   │   └── Suppliers/         # Lieferanten-Verwaltung
+│   │   ├── Articles/                 # Artikel-Verwaltung
+│   │   ├── Categories/               # Artikel-Kategorien
+│   │   ├── Customers/                # Kunden-Verwaltung (Tabs)
+│   │   ├── DeliveryNotes/            # Lieferscheine
+│   │   ├── IncomingInvoices/         # Eingangsrechnungen
+│   │   ├── Invoices/                 # Ausgangsrechnungen
+│   │   ├── Quotes/                   # Angebote (mit Summen)
+│   │   ├── Roles/                    # Rollen-Verwaltung
+│   │   ├── Suppliers/                # Lieferanten-Verwaltung
+│   │   └── Users/                    # Benutzer-Verwaltung
 │   └── Widgets/
-│       └── BuhaStatsOverview.php  # Dashboard-Kennzahlen
+│       └── BalanceStatsOverview.php   # Dashboard-Kennzahlen
 ├── Models/
-│   ├── Traits/
-│   │   └── HasContactFields.php   # Gemeinsamer Trait fuer Kontakte
 │   ├── Article.php
+│   ├── Category.php
+│   ├── CompanySetting.php
+│   ├── ContactPerson.php
 │   ├── Customer.php
+│   ├── DeliveryNote.php / DeliveryNoteItem.php
 │   ├── IncomingInvoice.php
-│   ├── Invoice.php
-│   ├── InvoiceItem.php
-│   └── Supplier.php
-└── Providers/Filament/
-    └── AdminPanelProvider.php
+│   ├── Invoice.php / InvoiceItem.php
+│   ├── NumberRange.php
+│   ├── Quote.php / QuoteItem.php
+│   ├── Role.php
+│   ├── Supplier.php
+│   └── User.php
+├── Policies/                          # Zugriffssteuerung pro Resource
+│   ├── ArticlePolicy.php
+│   ├── CategoryPolicy.php
+│   ├── CustomerPolicy.php
+│   ├── DeliveryNotePolicy.php
+│   ├── IncomingInvoicePolicy.php
+│   ├── InvoicePolicy.php
+│   ├── QuotePolicy.php
+│   ├── RolePolicy.php
+│   ├── SupplierPolicy.php
+│   └── UserPolicy.php
+└── Services/
+    └── NumberFormatService.php        # Nummernkreis-Formatierung
 ```
 
 ## Datenmodell
 
 ```
-customers  ──< invoices ──< invoice_items >── articles
-suppliers  ──< incoming_invoices
+roles ──< users
+customers ──< contact_persons
+customers ──< invoices ──< invoice_items >── articles
+customers ──< quotes ──< quote_items >── articles
+customers ──< delivery_notes ──< delivery_note_items >── articles
+suppliers ──< incoming_invoices
+articles >──< categories (Pivot: article_category)
 ```
 
-- **customers / suppliers**: Getrennte Tabellen, gleiche Felder (Name, Adresse, USt-IdNr., Zahlungsziel)
-- **articles**: Artikel-Stammdaten mit Einheit, Nettopreis, MwSt-Satz
-- **invoices**: Ausgangsrechnungen mit auto-generierter Nummer (`RE-{Jahr}-{0001}`)
-- **invoice_items**: Rechnungspositionen (Menge, Preis, MwSt, Sortierung)
-- **incoming_invoices**: Eingangsrechnungen mit Netto/MwSt/Brutto-Betraegen
+## Benutzer- & Rechteverwaltung
+
+Das System verwendet flexible Rollen mit CRUD-Berechtigungen:
+
+**Bereiche:**
+Kunden, Lieferanten, Artikel, Kategorien, Rechnungen, Eingangsrechnungen, Angebote, Lieferscheine, Einstellungen, Benutzer & Rollen
+
+**Berechtigungen pro Bereich:** Anzeigen, Erstellen, Bearbeiten, Loeschen
+
+**Vorkonfigurierte Rollen (Seeder):**
+
+| Rolle | Zugriff |
+|---|---|
+| Administrator | Voller Zugriff (Super-Admin) |
+| Buchhalter | Alles ausser Benutzer/Rollen-Verwaltung |
+| Mitarbeiter | Nur Lesen bei Kunden, Artikeln, Rechnungswesen |
+
+**Sicherheit:**
+- Geschuetzter Super-Admin (nicht loeschbar)
+- Benutzer ohne Rolle haben keinen Zugriff
+- Super-Admin-Rolle kann nicht geloescht werden
+- Benutzer koennen sich nicht selbst loeschen
 
 ## Filament Admin-Panel
 
 Das Admin-Panel ist unter `/admin` erreichbar.
 
 **Navigation:**
-- **Kontakte** -- Kunden, Lieferanten
-- **Artikel** -- Artikel-Stammdaten
-- **Rechnungswesen** -- Rechnungen, Eingangsrechnungen
+- **Kontakte** -- Kunden (mit Ansprechpartnern), Lieferanten
+- **Artikel** -- Artikel-Stammdaten (mit Kategorien, Brutto/Netto-Rechner)
+- **Rechnungswesen** -- Rechnungen, Angebote, Lieferscheine, Eingangsrechnungen
+- **Einstellungen** -- Firmenstammdaten, Nummernkreise, Kategorien, Benutzer, Rollen
 
 **Dashboard-Widgets:**
 - Offene Rechnungen (Anzahl + Summe)
 - Offene Eingangsrechnungen (Anzahl + Summe)
 - Einnahmen / Ausgaben / Gewinn
+
+## Nummernkreise
+
+Flexibles Platzhalter-System fuer automatische Dokumentnummern:
+
+| Platzhalter | Beschreibung | Beispiel |
+|---|---|---|
+| `{jjjj}` | Jahr 4-stellig | 2026 |
+| `{jj}` | Jahr 2-stellig | 26 |
+| `{mm}` | Monat mit Null | 02 |
+| `{z,4}` | Globalzaehler 4-stellig | 0042 |
+| `{jz,4}` | Jahreszaehler 4-stellig | 0001 |
+
+**Beispiel:** `RE-{jjjj}-{jz,4}` ergibt `RE-2026-0001`
 
 ---
 
@@ -78,8 +150,8 @@ Das Admin-Panel ist unter `/admin` erreichbar.
 
 ```bash
 # 1. Repo klonen
-git clone <repo-url> buha-system
-cd buha-system
+git clone <repo-url> balance
+cd balance
 
 # 2. Composer-Dependencies installieren (einmalig ohne Sail)
 docker run --rm \
@@ -92,16 +164,9 @@ docker run --rm \
 # 3. .env vorbereiten
 cp .env.example .env
 #    Dann in .env sicherstellen:
-#    APP_NAME="Buha System"
-#    APP_LOCALE=de
-#    APP_FALLBACK_LOCALE=de
-#    APP_FAKER_LOCALE=de_DE
-#    APP_TIMEZONE=Europe/Berlin
+#    APP_NAME="balance by BEQN"
 #    DB_CONNECTION=mysql
 #    DB_HOST=mysql
-#    DB_DATABASE=laravel
-#    DB_USERNAME=sail
-#    DB_PASSWORD=password
 
 # 4. Sail starten
 ./vendor/bin/sail up -d
@@ -112,12 +177,7 @@ cp .env.example .env
 # 6. Datenbank migrieren + Testdaten laden
 ./vendor/bin/sail artisan migrate --seed
 
-# 7. Admin-User anlegen (falls nicht per Seeder)
-#    Der Seeder legt bereits an: test@example.com / password
-#    Fuer einen eigenen User:
-./vendor/bin/sail artisan make:filament-user
-
-# 8. Fertig -- im Browser oeffnen
+# 7. Fertig -- im Browser oeffnen
 open http://localhost/admin
 ```
 
@@ -127,28 +187,37 @@ open http://localhost/admin
 |---|---|
 | E-Mail | `test@example.com` |
 | Passwort | `password` |
+| Rolle | Administrator (Super-Admin) |
 
 ### Nuetzliche Sail-Befehle
 
 ```bash
-# Sail starten / stoppen
-./vendor/bin/sail up -d
-./vendor/bin/sail down
-
-# Artisan-Befehle
-./vendor/bin/sail artisan migrate
-./vendor/bin/sail artisan migrate:fresh --seed   # DB komplett neu aufsetzen
-./vendor/bin/sail artisan tinker
-
-# Composer
-./vendor/bin/sail composer require paket/name
-
-# Logs anschauen
-./vendor/bin/sail artisan pail
-
-# MySQL-Shell
-./vendor/bin/sail mysql
+./vendor/bin/sail up -d                       # Starten
+./vendor/bin/sail down                        # Stoppen
+./vendor/bin/sail artisan migrate:fresh --seed # DB komplett neu
+./vendor/bin/sail artisan test                # Tests ausfuehren
+./vendor/bin/sail mysql                       # MySQL-Shell
 ```
+
+---
+
+## Tests
+
+```bash
+# Alle Tests ausfuehren
+./vendor/bin/sail artisan test
+
+# Nur Balance-Tests
+./vendor/bin/sail artisan test --filter=BalanceTest
+```
+
+Aktuell 69 Tests mit 139 Assertions:
+- Model-CRUD-Tests
+- Beziehungs-Tests
+- Berechnungs-Tests (Summen, Rabatte, MwSt)
+- Nummernkreis-Tests (Formatierung, Zaehler, Reset)
+- Seitenzugriffs-Tests
+- Rollen- & Berechtigungs-Tests
 
 ---
 
@@ -167,8 +236,8 @@ open http://localhost/admin
 
 ```bash
 # 1. Code auf den Server bringen
-git clone <repo-url> /var/www/buha-system
-cd /var/www/buha-system
+git clone <repo-url> /var/www/balance
+cd /var/www/balance
 
 # 2. Dependencies installieren (ohne Dev-Pakete)
 composer install --no-dev --optimize-autoloader
@@ -183,21 +252,17 @@ cp .env.example .env
 Dann `.env` fuer Produktion anpassen:
 
 ```env
-APP_NAME="Buha System"
+APP_NAME="balance by BEQN"
 APP_ENV=production
 APP_DEBUG=false
 APP_URL=https://deine-domain.de
 APP_TIMEZONE=Europe/Berlin
 
-APP_LOCALE=de
-APP_FALLBACK_LOCALE=de
-APP_FAKER_LOCALE=de_DE
-
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
 DB_PORT=3306
-DB_DATABASE=buha_system
-DB_USERNAME=buha_user
+DB_DATABASE=balance
+DB_USERNAME=balance_user
 DB_PASSWORD=<sicheres-passwort>
 
 SESSION_DRIVER=database
@@ -221,82 +286,26 @@ php artisan filament:cache-components
 # 8. Admin-User anlegen
 php artisan make:filament-user
 #    --> Name, E-Mail und Passwort eingeben
+#    Danach in der DB is_super_admin auf true setzen
 
 # 9. Berechtigungen setzen
 chown -R www-data:www-data storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 ```
 
-### Nginx-Konfiguration (Beispiel)
-
-```nginx
-server {
-    listen 80;
-    server_name deine-domain.de;
-    return 301 https://$host$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name deine-domain.de;
-
-    root /var/www/buha-system/public;
-    index index.php;
-
-    ssl_certificate     /etc/letsencrypt/live/deine-domain.de/fullchain.pem;
-    ssl_certificate_key /etc/letsencrypt/live/deine-domain.de/privkey.pem;
-
-    add_header X-Frame-Options "SAMEORIGIN";
-    add_header X-Content-Type-Options "nosniff";
-
-    charset utf-8;
-
-    location / {
-        try_files $uri $uri/ /index.php?$query_string;
-    }
-
-    location = /favicon.ico { access_log off; log_not_found off; }
-    location = /robots.txt  { access_log off; log_not_found off; }
-
-    error_page 404 /index.php;
-
-    location ~ \.php$ {
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
-        fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
-        include fastcgi_params;
-    }
-
-    location ~ /\.(?!well-known).* {
-        deny all;
-    }
-}
-```
-
 ### Updates deployen
 
 ```bash
-cd /var/www/buha-system
-
-# Wartungsmodus aktivieren
+cd /var/www/balance
 php artisan down
-
-# Code aktualisieren
 git pull origin main
-
-# Dependencies aktualisieren
 composer install --no-dev --optimize-autoloader
 npm ci && npm run build
-
-# Datenbank migrieren
 php artisan migrate --force
-
-# Caches neu aufbauen
 php artisan config:cache
 php artisan route:cache
 php artisan view:cache
 php artisan filament:cache-components
-
-# Wartungsmodus deaktivieren
 php artisan up
 ```
 
@@ -304,7 +313,8 @@ php artisan up
 
 ## Wichtige Hinweise
 
-- **Rechnungsnummern** werden automatisch im Format `RE-{Jahr}-{0001}` vergeben und sind pro Jahr sequentiell
+- **Dokumentnummern** werden automatisch ueber konfigurierbare Nummernkreise vergeben
 - **Auf Produktion niemals** `migrate:fresh` oder `--seed` verwenden -- das loescht alle Daten!
 - **Backups**: Regelmaessig die MySQL-Datenbank sichern (`mysqldump`)
 - **APP_DEBUG=false** auf Produktion -- sonst werden sensible Infos angezeigt
+- **Super-Admin**: Mindestens ein Super-Admin muss immer existieren

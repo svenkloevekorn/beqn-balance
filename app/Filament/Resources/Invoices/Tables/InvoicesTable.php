@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Invoices\Tables;
 use App\Enums\InvoiceStatus;
 use App\Enums\PaymentMethod;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\Payment;
 use App\Services\PdfService;
 use Filament\Actions\Action;
@@ -16,9 +17,11 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Columns\Summarizers\Summarizer;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Query\Builder;
 
 class InvoicesTable
 {
@@ -42,6 +45,38 @@ class InvoicesTable
                     ->label('Fällig am')
                     ->date('d.m.Y')
                     ->sortable(),
+                TextColumn::make('net_total')
+                    ->label('Netto')
+                    ->money('EUR')
+                    ->getStateUsing(fn (Invoice $record) => $record->net_total)
+                    ->summarize(
+                        Summarizer::make()
+                            ->label('Gesamt')
+                            ->using(function (Builder $query): float {
+                                $ids = $query->pluck('id');
+
+                                return InvoiceItem::whereIn('invoice_id', $ids)
+                                    ->selectRaw('SUM(quantity * net_price) as total')
+                                    ->value('total') ?? 0;
+                            })
+                            ->money('EUR')
+                    ),
+                TextColumn::make('remaining_amount')
+                    ->label('Offen')
+                    ->money('EUR')
+                    ->getStateUsing(fn (Invoice $record) => $record->remaining_amount)
+                    ->summarize(
+                        Summarizer::make()
+                            ->label('Gesamt')
+                            ->using(function (Builder $query): float {
+                                $invoices = Invoice::whereIn('id', $query->pluck('id'))
+                                    ->with(['items', 'payments'])
+                                    ->get();
+
+                                return $invoices->sum(fn (Invoice $inv) => $inv->remaining_amount);
+                            })
+                            ->money('EUR')
+                    ),
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge(),

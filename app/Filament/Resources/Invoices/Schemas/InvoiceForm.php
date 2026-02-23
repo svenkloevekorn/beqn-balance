@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Invoices\Schemas;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Article;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -156,6 +157,40 @@ class InvoiceForm
                             ->addActionLabel('Position hinzufügen')
                             ->columnSpanFull(),
                     ]),
+                Section::make('Zahlungen')
+                    ->columnSpanFull()
+                    ->schema([
+                        Repeater::make('payments')
+                            ->label('')
+                            ->relationship()
+                            ->schema([
+                                DatePicker::make('payment_date')
+                                    ->label('Datum')
+                                    ->default(now())
+                                    ->required()
+                                    ->columnSpan(1),
+                                TextInput::make('amount')
+                                    ->label('Betrag (€)')
+                                    ->numeric()
+                                    ->step(0.01)
+                                    ->required()
+                                    ->columnSpan(1),
+                                Select::make('payment_method')
+                                    ->label('Zahlungsart')
+                                    ->options(PaymentMethod::class)
+                                    ->default(PaymentMethod::BankTransfer)
+                                    ->required()
+                                    ->columnSpan(1),
+                                TextInput::make('notes')
+                                    ->label('Bemerkung')
+                                    ->columnSpan(1),
+                            ])
+                            ->columns(4)
+                            ->defaultItems(0)
+                            ->addActionLabel('Zahlung hinzufügen')
+                            ->columnSpanFull(),
+                    ])
+                    ->hiddenOn('create'),
                 Section::make('Bemerkungen')
                     ->columnSpanFull()
                     ->schema([

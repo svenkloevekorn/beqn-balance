@@ -42,6 +42,11 @@ class Invoice extends Model
         return $this->hasMany(InvoiceItem::class)->orderBy('sort_order');
     }
 
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class)->orderBy('payment_date');
+    }
+
     public function netTotal(): Attribute
     {
         return Attribute::get(function () {
@@ -79,6 +84,35 @@ class Invoice extends Model
         return Attribute::get(function () {
             return round($this->net_total - $this->discount_amount, 2);
         });
+    }
+
+    public function paidTotal(): Attribute
+    {
+        return Attribute::get(function () {
+            return $this->payments->sum('amount');
+        });
+    }
+
+    public function remainingAmount(): Attribute
+    {
+        return Attribute::get(function () {
+            $total = $this->apply_discount
+                ? $this->net_total_after_discount + $this->vat_total
+                : $this->gross_total;
+
+            return round($total - $this->paid_total, 2);
+        });
+    }
+
+    public function updatePaymentStatus(): void
+    {
+        $remaining = $this->remaining_amount;
+
+        if ($remaining <= 0) {
+            $this->update(['status' => InvoiceStatus::Paid]);
+        } elseif ($this->paid_total > 0) {
+            $this->update(['status' => InvoiceStatus::PartiallyPaid]);
+        }
     }
 
     public static function generateInvoiceNumber(): string

@@ -3,12 +3,18 @@
 namespace App\Filament\Resources\Invoices\Tables;
 
 use App\Enums\InvoiceStatus;
+use App\Enums\PaymentMethod;
 use App\Models\Invoice;
+use App\Models\Payment;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -61,6 +67,41 @@ class InvoicesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('addPayment')
+                    ->label('Zahlung erfassen')
+                    ->icon(Heroicon::OutlinedBanknotes)
+                    ->color('success')
+                    ->form([
+                        DatePicker::make('payment_date')
+                            ->label('Datum')
+                            ->default(now())
+                            ->required(),
+                        TextInput::make('amount')
+                            ->label('Betrag (€)')
+                            ->numeric()
+                            ->step(0.01)
+                            ->required(),
+                        Select::make('payment_method')
+                            ->label('Zahlungsart')
+                            ->options(PaymentMethod::class)
+                            ->default(PaymentMethod::BankTransfer)
+                            ->required(),
+                        TextInput::make('notes')
+                            ->label('Bemerkung'),
+                    ])
+                    ->action(function (Invoice $record, array $data) {
+                        $record->payments()->create($data);
+
+                        Notification::make()
+                            ->title('Zahlung erfasst')
+                            ->success()
+                            ->send();
+                    })
+                    ->hidden(fn (Invoice $record) => in_array($record->status, [
+                        InvoiceStatus::Draft,
+                        InvoiceStatus::Paid,
+                        InvoiceStatus::Cancelled,
+                    ])),
                 Action::make('downloadPdf')
                     ->label(fn ($record) => $record->status === InvoiceStatus::Draft ? 'Vorschau' : 'PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)

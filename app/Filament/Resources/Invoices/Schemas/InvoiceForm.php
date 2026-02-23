@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\Schemas;
 
+use App\Enums\InvoiceStatus;
 use App\Models\Article;
 use App\Models\Customer;
 use App\Models\Invoice;
@@ -59,13 +60,8 @@ class InvoiceForm
                             ->required(),
                         Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'draft' => 'Entwurf',
-                                'sent' => 'Versendet',
-                                'paid' => 'Bezahlt',
-                                'cancelled' => 'Storniert',
-                            ])
-                            ->default('draft')
+                            ->options(InvoiceStatus::class)
+                            ->default(InvoiceStatus::Draft)
                             ->required(),
                     ]),
                 Section::make('Positionen')

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Invoices\Tables;
 
+use App\Enums\InvoiceStatus;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -36,42 +37,23 @@ class InvoicesTable
                     ->sortable(),
                 TextColumn::make('status')
                     ->label('Status')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'paid' => 'Bezahlt',
-                        'cancelled' => 'Storniert',
-                        default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'sent' => 'warning',
-                        'paid' => 'success',
-                        'cancelled' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->badge(),
             ])
             ->defaultSort('invoice_date', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'paid' => 'Bezahlt',
-                        'cancelled' => 'Storniert',
-                    ]),
+                    ->options(InvoiceStatus::class),
             ])
             ->recordActions([
                 EditAction::make(),
                 Action::make('downloadPdf')
-                    ->label(fn ($record) => $record->status === 'draft' ? 'Vorschau' : 'PDF')
+                    ->label(fn ($record) => $record->status === InvoiceStatus::Draft ? 'Vorschau' : 'PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)
-                    ->color(fn ($record) => $record->status === 'draft' ? 'gray' : 'success')
+                    ->color(fn ($record) => $record->status === InvoiceStatus::Draft ? 'gray' : 'success')
                     ->action(function ($record) {
                         $service = app(PdfService::class);
-                        $isDraft = $record->status === 'draft';
+                        $isDraft = $record->status === InvoiceStatus::Draft;
                         $content = $service->generateInvoice($record, $isDraft);
                         $filename = $record->invoice_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
 

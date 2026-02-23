@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Quotes\Pages;
 
+use App\Enums\QuoteStatus;
 use App\Filament\Resources\Quotes\QuoteResource;
 use App\Services\PdfService;
 use Filament\Actions\Action;
@@ -17,12 +18,12 @@ class EditQuote extends EditRecord
     {
         return [
             Action::make('downloadPdf')
-                ->label(fn () => $this->record->status === 'draft' ? 'Vorschau PDF' : 'PDF herunterladen')
+                ->label(fn () => $this->record->status === QuoteStatus::Draft ? 'Vorschau PDF' : 'PDF herunterladen')
                 ->icon(Heroicon::OutlinedArrowDownTray)
-                ->color(fn () => $this->record->status === 'draft' ? 'gray' : 'success')
+                ->color(fn () => $this->record->status === QuoteStatus::Draft ? 'gray' : 'success')
                 ->action(function () {
                     $service = app(PdfService::class);
-                    $isDraft = $this->record->status === 'draft';
+                    $isDraft = $this->record->status === QuoteStatus::Draft;
                     $content = $service->generateQuote($this->record, $isDraft);
                     $filename = $this->record->quote_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
 

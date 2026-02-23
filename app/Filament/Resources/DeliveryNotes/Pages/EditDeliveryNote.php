@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DeliveryNotes\Pages;
 
+use App\Enums\DeliveryNoteStatus;
 use App\Filament\Resources\DeliveryNotes\DeliveryNoteResource;
 use App\Services\PdfService;
 use Filament\Actions\Action;
@@ -17,12 +18,12 @@ class EditDeliveryNote extends EditRecord
     {
         return [
             Action::make('downloadPdf')
-                ->label(fn () => $this->record->status === 'draft' ? 'Vorschau PDF' : 'PDF herunterladen')
+                ->label(fn () => $this->record->status === DeliveryNoteStatus::Draft ? 'Vorschau PDF' : 'PDF herunterladen')
                 ->icon(Heroicon::OutlinedArrowDownTray)
-                ->color(fn () => $this->record->status === 'draft' ? 'gray' : 'success')
+                ->color(fn () => $this->record->status === DeliveryNoteStatus::Draft ? 'gray' : 'success')
                 ->action(function () {
                     $service = app(PdfService::class);
-                    $isDraft = $this->record->status === 'draft';
+                    $isDraft = $this->record->status === DeliveryNoteStatus::Draft;
                     $content = $service->generateDeliveryNote($this->record, $isDraft);
                     $filename = $this->record->delivery_note_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
 

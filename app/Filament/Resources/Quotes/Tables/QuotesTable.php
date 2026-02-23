@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\Quotes\Tables;
 
+use App\Enums\QuoteStatus;
+use App\Models\Quote;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -36,42 +38,36 @@ class QuotesTable
                     ->sortable(),
                 TextColumn::make('status')
                     ->label('Status')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'accepted' => 'Angenommen',
-                        'rejected' => 'Abgelehnt',
-                        default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'sent' => 'warning',
-                        'accepted' => 'success',
-                        'rejected' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->badge(),
             ])
             ->defaultSort('quote_date', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'accepted' => 'Angenommen',
-                        'rejected' => 'Abgelehnt',
-                    ]),
+                    ->options(QuoteStatus::class),
+                SelectFilter::make('year')
+                    ->label('Jahr')
+                    ->options(fn () => Quote::selectRaw('YEAR(quote_date) as year')
+                        ->distinct()
+                        ->orderByDesc('year')
+                        ->pluck('year', 'year')
+                        ->mapWithKeys(fn ($year) => [$year => $year])
+                        ->toArray()
+                    )
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'],
+                        fn ($q, $year) => $q->whereYear('quote_date', $year),
+                    )),
             ])
             ->recordActions([
                 EditAction::make(),
                 Action::make('downloadPdf')
-                    ->label(fn ($record) => $record->status === 'draft' ? 'Vorschau' : 'PDF')
+                    ->label(fn ($record) => $record->status === QuoteStatus::Draft ? 'Vorschau' : 'PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)
-                    ->color(fn ($record) => $record->status === 'draft' ? 'gray' : 'success')
+                    ->color(fn ($record) => $record->status === QuoteStatus::Draft ? 'gray' : 'success')
                     ->action(function ($record) {
                         $service = app(PdfService::class);
-                        $isDraft = $record->status === 'draft';
+                        $isDraft = $record->status === QuoteStatus::Draft;
                         $content = $service->generateQuote($record, $isDraft);
                         $filename = $record->quote_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
 

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\DeliveryNotes\Schemas;
 
+use App\Enums\DeliveryNoteStatus;
 use App\Models\Article;
 use App\Models\NumberRange;
 use Filament\Forms\Components\DatePicker;
@@ -42,12 +43,8 @@ class DeliveryNoteForm
                             ->required(),
                         Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'draft' => 'Entwurf',
-                                'sent' => 'Versendet',
-                                'delivered' => 'Zugestellt',
-                            ])
-                            ->default('draft')
+                            ->options(DeliveryNoteStatus::class)
+                            ->default(DeliveryNoteStatus::Draft)
                             ->required(),
                     ]),
                 Section::make('Positionen')

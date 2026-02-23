@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\QuoteStatus;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,7 @@ class Quote extends Model
         return [
             'quote_date' => 'date',
             'valid_until' => 'date',
+            'status' => QuoteStatus::class,
             'apply_discount' => 'boolean',
             'discount_percent' => 'decimal:2',
         ];

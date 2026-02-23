@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\DeliveryNotes\Tables;
 
+use App\Enums\DeliveryNoteStatus;
+use App\Models\DeliveryNote;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -32,39 +34,36 @@ class DeliveryNotesTable
                     ->sortable(),
                 TextColumn::make('status')
                     ->label('Status')
-                    ->badge()
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'delivered' => 'Zugestellt',
-                        default => $state,
-                    })
-                    ->color(fn (string $state): string => match ($state) {
-                        'draft' => 'gray',
-                        'sent' => 'warning',
-                        'delivered' => 'success',
-                        default => 'gray',
-                    }),
+                    ->badge(),
             ])
             ->defaultSort('delivery_date', 'desc')
             ->filters([
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options([
-                        'draft' => 'Entwurf',
-                        'sent' => 'Versendet',
-                        'delivered' => 'Zugestellt',
-                    ]),
+                    ->options(DeliveryNoteStatus::class),
+                SelectFilter::make('year')
+                    ->label('Jahr')
+                    ->options(fn () => DeliveryNote::selectRaw('YEAR(delivery_date) as year')
+                        ->distinct()
+                        ->orderByDesc('year')
+                        ->pluck('year', 'year')
+                        ->mapWithKeys(fn ($year) => [$year => $year])
+                        ->toArray()
+                    )
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'],
+                        fn ($q, $year) => $q->whereYear('delivery_date', $year),
+                    )),
             ])
             ->recordActions([
                 EditAction::make(),
                 Action::make('downloadPdf')
-                    ->label(fn ($record) => $record->status === 'draft' ? 'Vorschau' : 'PDF')
+                    ->label(fn ($record) => $record->status === DeliveryNoteStatus::Draft ? 'Vorschau' : 'PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)
-                    ->color(fn ($record) => $record->status === 'draft' ? 'gray' : 'success')
+                    ->color(fn ($record) => $record->status === DeliveryNoteStatus::Draft ? 'gray' : 'success')
                     ->action(function ($record) {
                         $service = app(PdfService::class);
-                        $isDraft = $record->status === 'draft';
+                        $isDraft = $record->status === DeliveryNoteStatus::Draft;
                         $content = $service->generateDeliveryNote($record, $isDraft);
                         $filename = $record->delivery_note_number . ($isDraft ? '_ENTWURF' : '') . '.pdf';
 

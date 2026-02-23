@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Quotes\Schemas;
 
+use App\Enums\QuoteStatus;
 use App\Models\Article;
 use App\Models\Customer;
 use App\Models\NumberRange;
@@ -61,13 +62,8 @@ class QuoteForm
                             ->default(now()->addDays(30)),
                         Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'draft' => 'Entwurf',
-                                'sent' => 'Versendet',
-                                'accepted' => 'Angenommen',
-                                'rejected' => 'Abgelehnt',
-                            ])
-                            ->default('draft')
+                            ->options(QuoteStatus::class)
+                            ->default(QuoteStatus::Draft)
                             ->required(),
                     ]),
                 Section::make('Rabatt')

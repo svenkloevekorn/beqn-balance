@@ -11,6 +11,7 @@ use App\Models\NumberRange;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -19,6 +20,7 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\HtmlString;
 
 class InvoiceForm
 {
@@ -124,6 +126,7 @@ class InvoiceForm
                                     ->step(0.01)
                                     ->default(1)
                                     ->required()
+                                    ->live(onBlur: true)
                                     ->columnSpan(1),
                                 TextInput::make('unit')
                                     ->label('Einheit')
@@ -136,6 +139,7 @@ class InvoiceForm
                                     ->step(0.01)
                                     ->default(0)
                                     ->required()
+                                    ->live(onBlur: true)
                                     ->columnSpan(1),
                                 Select::make('vat_rate')
                                     ->label('MwSt (%)')
@@ -146,6 +150,7 @@ class InvoiceForm
                                     ])
                                     ->default('19.00')
                                     ->required()
+                                    ->live()
                                     ->columnSpan(1),
                                 Hidden::make('sort_order')
                                     ->default(0),
@@ -156,6 +161,86 @@ class InvoiceForm
                             ->reorderableWithButtons()
                             ->addActionLabel('Position hinzufügen')
                             ->columnSpanFull(),
+                    ]),
+                Section::make('Summen')
+                    ->columnSpanFull()
+                    ->schema([
+                        Placeholder::make('totals')
+                            ->label('')
+                            ->content(function (Get $get): HtmlString {
+                                $items = $get('items') ?? [];
+
+                                $netTotal = 0;
+                                $vatGroups = [];
+
+                                foreach ($items as $item) {
+                                    $quantity = (float) ($item['quantity'] ?? 0);
+                                    $netPrice = (float) ($item['net_price'] ?? 0);
+                                    $vatRate = (float) ($item['vat_rate'] ?? 0);
+
+                                    $lineNet = round($quantity * $netPrice, 2);
+                                    $netTotal += $lineNet;
+
+                                    $key = number_format($vatRate, 2);
+                                    if (! isset($vatGroups[$key])) {
+                                        $vatGroups[$key] = 0;
+                                    }
+                                    $vatGroups[$key] += round($lineNet * $vatRate / 100, 2);
+                                }
+
+                                ksort($vatGroups);
+                                $vatTotal = array_sum($vatGroups);
+                                $grossTotal = $netTotal + $vatTotal;
+
+                                $applyDiscount = $get('apply_discount');
+                                $discountPercent = (float) ($get('discount_percent') ?? 0);
+                                $discountAmount = 0;
+                                $netAfterDiscount = $netTotal;
+
+                                if ($applyDiscount && $discountPercent > 0) {
+                                    $discountAmount = round($netTotal * $discountPercent / 100, 2);
+                                    $netAfterDiscount = $netTotal - $discountAmount;
+                                    $vatTotal = 0;
+                                    $adjustedVatGroups = [];
+                                    foreach ($vatGroups as $rate => $vat) {
+                                        $factor = $netTotal > 0 ? ($netTotal - $discountAmount) / $netTotal : 0;
+                                        $adjustedVat = round($vat * $factor, 2);
+                                        $adjustedVatGroups[$rate] = $adjustedVat;
+                                        $vatTotal += $adjustedVat;
+                                    }
+                                    $vatGroups = $adjustedVatGroups;
+                                    $grossTotal = $netAfterDiscount + $vatTotal;
+                                }
+
+                                $fmt = fn ($v) => number_format($v, 2, ',', '.');
+
+                                $html = '<div style="display: flex; justify-content: flex-end;">';
+                                $html .= '<table style="min-width: 350px; border-collapse: collapse; font-size: 14px;">';
+
+                                $html .= '<tr><td style="padding: 4px 12px;">Netto-Summe</td>';
+                                $html .= '<td style="padding: 4px 12px; text-align: right;">' . $fmt($netTotal) . ' &euro;</td></tr>';
+
+                                if ($applyDiscount && $discountPercent > 0) {
+                                    $html .= '<tr><td style="padding: 4px 12px; color: #dc2626;">Rabatt (' . $fmt($discountPercent) . ' %)</td>';
+                                    $html .= '<td style="padding: 4px 12px; text-align: right; color: #dc2626;">-' . $fmt($discountAmount) . ' &euro;</td></tr>';
+                                    $html .= '<tr><td style="padding: 4px 12px;">Netto nach Rabatt</td>';
+                                    $html .= '<td style="padding: 4px 12px; text-align: right;">' . $fmt($netAfterDiscount) . ' &euro;</td></tr>';
+                                }
+
+                                foreach ($vatGroups as $rate => $vat) {
+                                    $rateLabel = number_format((float) $rate, 0) . ' %';
+                                    $html .= '<tr><td style="padding: 4px 12px;">MwSt ' . $rateLabel . '</td>';
+                                    $html .= '<td style="padding: 4px 12px; text-align: right;">' . $fmt($vat) . ' &euro;</td></tr>';
+                                }
+
+                                $html .= '<tr style="border-top: 2px solid #d1d5db; font-weight: bold;">';
+                                $html .= '<td style="padding: 8px 12px;">Brutto-Summe</td>';
+                                $html .= '<td style="padding: 8px 12px; text-align: right;">' . $fmt($grossTotal) . ' &euro;</td></tr>';
+
+                                $html .= '</table></div>';
+
+                                return new HtmlString($html);
+                            }),
                     ]),
                 Section::make('Zahlungen')
                     ->columnSpanFull()

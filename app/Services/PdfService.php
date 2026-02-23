@@ -35,7 +35,20 @@ class PdfService
 
         $content = $pdf->output();
 
-        return $this->applyLetterhead($content, $company);
+        $content = $this->applyLetterhead($content, $company);
+
+        // ZUGFeRD-XML einbetten (nur fuer echte Rechnungen, nicht fuer Entwuerfe)
+        if (! $isDraft) {
+            try {
+                $eInvoiceService = app(EInvoiceService::class);
+                $content = $eInvoiceService->embedXmlInPdf($invoice, $content);
+            } catch (\Throwable $e) {
+                // Bei Fehler normales PDF zurueckgeben und Fehler loggen
+                report($e);
+            }
+        }
+
+        return $content;
     }
 
     public function generateQuote(Model $quote, bool $isDraft = false): string

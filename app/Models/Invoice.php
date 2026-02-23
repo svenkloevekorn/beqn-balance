@@ -30,6 +30,7 @@ class Invoice extends Model
         'status',
         'apply_discount',
         'discount_percent',
+        'buyer_reference',
         'notes',
     ];
 

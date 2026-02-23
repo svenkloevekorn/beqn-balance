@@ -43,6 +43,10 @@ class CustomerForm
                                         TextInput::make('vat_id')
                                             ->label('USt-IdNr.')
                                             ->maxLength(255),
+                                        TextInput::make('buyer_reference')
+                                            ->label('Käufer-Referenz (E-Rechnung)')
+                                            ->helperText('Wird als Referenz in E-Rechnungen verwendet (z.B. Leitweg-ID bei Behörden)')
+                                            ->maxLength(255),
                                     ]),
                                 Section::make('Adresse')
                                     ->columns(2)

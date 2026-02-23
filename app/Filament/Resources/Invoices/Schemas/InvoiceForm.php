@@ -7,6 +7,7 @@ use App\Enums\PaymentMethod;
 use App\Models\Article;
 use App\Models\Customer;
 use App\Models\Invoice;
+use App\Models\InvoiceItem;
 use App\Models\NumberRange;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
@@ -55,6 +56,7 @@ class InvoiceForm
                                     }
                                     $set('discount_percent', $customer->discount_percent);
                                     $set('apply_discount', (bool) $customer->discount_percent);
+                                    $set('buyer_reference', $customer->buyer_reference);
                                 }
                             })
                             ->live(),
@@ -71,6 +73,11 @@ class InvoiceForm
                             ->options(InvoiceStatus::class)
                             ->default(InvoiceStatus::Draft)
                             ->required(),
+                        TextInput::make('buyer_reference')
+                            ->label('Käufer-Referenz (E-Rechnung)')
+                            ->helperText('Wird automatisch vom Kunden übernommen, kann pro Rechnung überschrieben werden')
+                            ->maxLength(255)
+                            ->columnSpanFull(),
                     ]),
                 Section::make('Rabatt')
                     ->columns(2)

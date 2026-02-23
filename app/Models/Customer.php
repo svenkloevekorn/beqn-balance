@@ -31,6 +31,7 @@ class Customer extends Model
         'vat_id',
         'payment_term_days',
         'discount_percent',
+        'buyer_reference',
         'notes',
     ];
 

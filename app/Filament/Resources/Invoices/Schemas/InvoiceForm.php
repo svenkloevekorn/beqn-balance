@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Customer;
 use App\Models\Invoice;
 use App\Models\NumberRange;
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Repeater;
@@ -45,8 +46,12 @@ class InvoiceForm
                                     return;
                                 }
                                 $customer = Customer::find($state);
-                                if ($customer && $customer->payment_term_days) {
-                                    $set('due_date', now()->addDays($customer->payment_term_days)->format('Y-m-d'));
+                                if ($customer) {
+                                    if ($customer->payment_term_days) {
+                                        $set('due_date', now()->addDays($customer->payment_term_days)->format('Y-m-d'));
+                                    }
+                                    $set('discount_percent', $customer->discount_percent);
+                                    $set('apply_discount', (bool) $customer->discount_percent);
                                 }
                             })
                             ->live(),
@@ -63,6 +68,24 @@ class InvoiceForm
                             ->options(InvoiceStatus::class)
                             ->default(InvoiceStatus::Draft)
                             ->required(),
+                    ]),
+                Section::make('Rabatt')
+                    ->columns(2)
+                    ->schema([
+                        Checkbox::make('apply_discount')
+                            ->label('Kundenrabatt anwenden')
+                            ->default(false)
+                            ->live()
+                            ->columnSpanFull(),
+                        TextInput::make('discount_percent')
+                            ->label('Rabatt (%)')
+                            ->numeric()
+                            ->step(0.01)
+                            ->minValue(0)
+                            ->maxValue(100)
+                            ->suffix('%')
+                            ->live(onBlur: true)
+                            ->visible(fn (callable $get) => $get('apply_discount')),
                     ]),
                 Section::make('Positionen')
                     ->columnSpanFull()

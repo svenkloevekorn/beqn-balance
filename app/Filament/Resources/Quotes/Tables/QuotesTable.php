@@ -3,12 +3,16 @@
 namespace App\Filament\Resources\Quotes\Tables;
 
 use App\Enums\QuoteStatus;
+use App\Filament\Resources\DeliveryNotes\DeliveryNoteResource;
+use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Models\Quote;
 use App\Services\PdfService;
+use App\Services\QuoteConversionService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -61,6 +65,42 @@ class QuotesTable
             ])
             ->recordActions([
                 EditAction::make(),
+                Action::make('convertToInvoice')
+                    ->label('In Rechnung')
+                    ->icon(Heroicon::OutlinedDocumentText)
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Angebot in Rechnung umwandeln')
+                    ->modalDescription('Es wird eine neue Rechnung mit allen Positionen erstellt.')
+                    ->action(function ($record) {
+                        $service = app(QuoteConversionService::class);
+                        $invoice = $service->toInvoice($record);
+
+                        Notification::make()
+                            ->title('Rechnung ' . $invoice->invoice_number . ' erstellt')
+                            ->success()
+                            ->send();
+
+                        return redirect(InvoiceResource::getUrl('edit', ['record' => $invoice]));
+                    }),
+                Action::make('convertToDeliveryNote')
+                    ->label('In Lieferschein')
+                    ->icon(Heroicon::OutlinedTruck)
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Angebot in Lieferschein umwandeln')
+                    ->modalDescription('Es wird ein neuer Lieferschein mit allen Positionen erstellt.')
+                    ->action(function ($record) {
+                        $service = app(QuoteConversionService::class);
+                        $deliveryNote = $service->toDeliveryNote($record);
+
+                        Notification::make()
+                            ->title('Lieferschein ' . $deliveryNote->delivery_note_number . ' erstellt')
+                            ->success()
+                            ->send();
+
+                        return redirect(DeliveryNoteResource::getUrl('edit', ['record' => $deliveryNote]));
+                    }),
                 Action::make('downloadPdf')
                     ->label(fn ($record) => $record->status === QuoteStatus::Draft ? 'Vorschau' : 'PDF')
                     ->icon(Heroicon::OutlinedArrowDownTray)

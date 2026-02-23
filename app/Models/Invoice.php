@@ -16,6 +16,8 @@ class Invoice extends Model
         'invoice_date',
         'due_date',
         'status',
+        'apply_discount',
+        'discount_percent',
         'notes',
     ];
 
@@ -25,6 +27,8 @@ class Invoice extends Model
             'invoice_date' => 'date',
             'due_date' => 'date',
             'status' => InvoiceStatus::class,
+            'apply_discount' => 'boolean',
+            'discount_percent' => 'decimal:2',
         ];
     }
 
@@ -56,6 +60,24 @@ class Invoice extends Model
     {
         return Attribute::get(function () {
             return $this->items->sum(fn (InvoiceItem $item) => $item->line_gross);
+        });
+    }
+
+    public function discountAmount(): Attribute
+    {
+        return Attribute::get(function () {
+            if (! $this->apply_discount || ! $this->discount_percent) {
+                return 0;
+            }
+
+            return round($this->net_total * $this->discount_percent / 100, 2);
+        });
+    }
+
+    public function netTotalAfterDiscount(): Attribute
+    {
+        return Attribute::get(function () {
+            return round($this->net_total - $this->discount_amount, 2);
         });
     }
 

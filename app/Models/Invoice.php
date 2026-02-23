@@ -47,6 +47,11 @@ class Invoice extends Model
         return $this->hasMany(Payment::class)->orderBy('payment_date');
     }
 
+    public function dunnings(): HasMany
+    {
+        return $this->hasMany(Dunning::class)->orderBy('dunning_date');
+    }
+
     public function netTotal(): Attribute
     {
         return Attribute::get(function () {

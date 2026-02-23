@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\CompanySetting;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Models\Dunning;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use setasign\Fpdi\Tcpdf\Fpdi;
@@ -85,6 +86,23 @@ class PdfService
             'dateLabel' => 'Lieferdatum',
             'dateValue' => $deliveryNote->delivery_date,
             'extraFields' => [],
+        ]);
+
+        $pdf->setPaper('a4');
+
+        $content = $pdf->output();
+
+        return $this->applyLetterhead($content, $company);
+    }
+
+    public function generateDunning(Dunning $dunning): string
+    {
+        $dunning->load(['invoice.customer', 'invoice.payments']);
+        $company = CompanySetting::instance();
+
+        $pdf = Pdf::loadView('pdf.dunning', [
+            'dunning' => $dunning,
+            'company' => $company,
         ]);
 
         $pdf->setPaper('a4');

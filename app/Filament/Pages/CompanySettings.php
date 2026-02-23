@@ -9,6 +9,7 @@ use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Support\HtmlString;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
@@ -50,10 +51,13 @@ class CompanySettings extends Page
 
     public ?array $numberRangesData = [];
 
+    public ?array $dunningData = [];
+
     public function mount(): void
     {
         $settings = CompanySetting::instance();
         $this->companyForm->fill($settings->toArray());
+        $this->dunningForm->fill($settings->toArray());
 
         $ranges = NumberRange::orderBy('id')->get()->toArray();
         $this->numberRangesForm->fill(['ranges' => $ranges]);
@@ -296,6 +300,82 @@ class CompanySettings extends Page
             ]);
     }
 
+    // --- Mahnwesen-Formular ---
+
+    public function dunningForm(Schema $schema): Schema
+    {
+        return $schema
+            ->statePath('dunningData')
+            ->components([
+                Section::make('Zahlungserinnerung')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('dunning_reminder_subject')
+                            ->label('Betreff')
+                            ->required()
+                            ->columnSpan(2),
+                        Textarea::make('dunning_reminder_text')
+                            ->label('Text')
+                            ->rows(4)
+                            ->placeholder('Standardtext fuer Zahlungserinnerungen...')
+                            ->columnSpan(2),
+                        TextInput::make('dunning_reminder_fee')
+                            ->label('Gebuehr (€)')
+                            ->numeric()
+                            ->step(0.01)
+                            ->default(0),
+                        TextInput::make('dunning_reminder_days')
+                            ->label('Zahlungsfrist (Tage)')
+                            ->numeric()
+                            ->default(7),
+                    ]),
+                Section::make('1. Mahnung')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('dunning_first_subject')
+                            ->label('Betreff')
+                            ->required()
+                            ->columnSpan(2),
+                        Textarea::make('dunning_first_text')
+                            ->label('Text')
+                            ->rows(4)
+                            ->placeholder('Standardtext fuer 1. Mahnung...')
+                            ->columnSpan(2),
+                        TextInput::make('dunning_first_fee')
+                            ->label('Gebuehr (€)')
+                            ->numeric()
+                            ->step(0.01)
+                            ->default(5),
+                        TextInput::make('dunning_first_days')
+                            ->label('Zahlungsfrist (Tage)')
+                            ->numeric()
+                            ->default(14),
+                    ]),
+                Section::make('2. Mahnung')
+                    ->columns(2)
+                    ->schema([
+                        TextInput::make('dunning_second_subject')
+                            ->label('Betreff')
+                            ->required()
+                            ->columnSpan(2),
+                        Textarea::make('dunning_second_text')
+                            ->label('Text')
+                            ->rows(4)
+                            ->placeholder('Standardtext fuer 2. Mahnung...')
+                            ->columnSpan(2),
+                        TextInput::make('dunning_second_fee')
+                            ->label('Gebuehr (€)')
+                            ->numeric()
+                            ->step(0.01)
+                            ->default(10),
+                        TextInput::make('dunning_second_days')
+                            ->label('Zahlungsfrist (Tage)')
+                            ->numeric()
+                            ->default(14),
+                    ]),
+            ]);
+    }
+
     // --- Platzhalter-Hilfe ---
 
     protected static function buildPlaceholderReference(): string
@@ -402,6 +482,21 @@ class CompanySettings extends Page
                                         ]),
                                     ]),
                             ]),
+
+                        Tab::make('Mahnwesen')
+                            ->icon(Heroicon::OutlinedExclamationTriangle)
+                            ->schema([
+                                Form::make([
+                                    EmbeddedSchema::make('dunningForm'),
+                                ])
+                                    ->id('dunning-form')
+                                    ->livewireSubmitHandler('saveDunning')
+                                    ->footer([
+                                        Actions::make([
+                                            $this->getSaveDunningAction(),
+                                        ]),
+                                    ]),
+                            ]),
                     ]),
             ]);
     }
@@ -423,6 +518,13 @@ class CompanySettings extends Page
             ->submit('number-ranges-form');
     }
 
+    protected function getSaveDunningAction(): Action
+    {
+        return Action::make('saveDunning')
+            ->label('Mahnwesen speichern')
+            ->submit('dunning-form');
+    }
+
     // --- Speichern ---
 
     public function saveCompany(): void
@@ -435,6 +537,19 @@ class CompanySettings extends Page
         Notification::make()
             ->success()
             ->title('Firmenstammdaten gespeichert')
+            ->send();
+    }
+
+    public function saveDunning(): void
+    {
+        $data = $this->dunningForm->getState();
+
+        $settings = CompanySetting::instance();
+        $settings->update($data);
+
+        Notification::make()
+            ->success()
+            ->title('Mahnwesen-Einstellungen gespeichert')
             ->send();
     }
 

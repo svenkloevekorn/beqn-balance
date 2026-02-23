@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Invoices\Tables;
 
 use App\Enums\InvoiceStatus;
+use App\Models\Invoice;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -44,6 +45,19 @@ class InvoicesTable
                 SelectFilter::make('status')
                     ->label('Status')
                     ->options(InvoiceStatus::class),
+                SelectFilter::make('year')
+                    ->label('Jahr')
+                    ->options(fn () => Invoice::selectRaw('YEAR(invoice_date) as year')
+                        ->distinct()
+                        ->orderByDesc('year')
+                        ->pluck('year', 'year')
+                        ->mapWithKeys(fn ($year) => [$year => $year])
+                        ->toArray()
+                    )
+                    ->query(fn ($query, array $data) => $query->when(
+                        $data['value'],
+                        fn ($q, $year) => $q->whereYear('invoice_date', $year),
+                    )),
             ])
             ->recordActions([
                 EditAction::make(),

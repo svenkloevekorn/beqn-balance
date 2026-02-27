@@ -34,6 +34,10 @@ class PriceMatrix extends Page
 
     public int $visibleCount = 4;
 
+    public int $scrollStep = 4;
+
+    public const VISIBLE_OPTIONS = [4, 6, 8, 12, 16];
+
     public function mount(): void
     {
         $this->loadData();
@@ -66,10 +70,21 @@ class PriceMatrix extends Page
         }
     }
 
+    public function setVisibleCount(int $count): void
+    {
+        if (! in_array($count, self::VISIBLE_OPTIONS)) {
+            return;
+        }
+
+        $this->visibleCount = $count;
+        $maxStart = max(0, count($this->customers) - $this->visibleCount);
+        $this->startIndex = min($this->startIndex, $maxStart);
+    }
+
     public function previousCustomers(): void
     {
         if ($this->startIndex > 0) {
-            $this->startIndex = max(0, $this->startIndex - $this->visibleCount);
+            $this->startIndex = max(0, $this->startIndex - $this->scrollStep);
         }
     }
 
@@ -77,7 +92,7 @@ class PriceMatrix extends Page
     {
         $maxStart = max(0, count($this->customers) - $this->visibleCount);
         if ($this->startIndex < $maxStart) {
-            $this->startIndex = min($maxStart, $this->startIndex + $this->visibleCount);
+            $this->startIndex = min($maxStart, $this->startIndex + $this->scrollStep);
         }
     }
 

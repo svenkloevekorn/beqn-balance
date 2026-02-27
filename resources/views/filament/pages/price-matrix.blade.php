@@ -27,6 +27,17 @@
                 <span class="nav-position">Kunden {{ $startIndex + 1 }}&ndash;{{ $endIndex }} von {{ $totalCustomers }}</span>
             </div>
 
+            <div class="nav-separator"></div>
+
+            <div class="nav-page-size">
+                <span class="page-size-label">Anzeige:</span>
+                <select wire:change="setVisibleCount($event.target.value)" class="page-size-select">
+                    @foreach(\App\Filament\Pages\PriceMatrix::VISIBLE_OPTIONS as $option)
+                        <option value="{{ $option }}" @if($visibleCount === $option) selected @endif>{{ $option }}</option>
+                    @endforeach
+                </select>
+            </div>
+
             <button
                 wire:click="nextCustomers"
                 @if($startIndex >= $maxStart) disabled @endif
@@ -159,6 +170,56 @@
 
         :is(.dark) .nav-position {
             color: white;
+        }
+
+        .nav-separator {
+            width: 1px;
+            height: 24px;
+            background: rgb(209 213 219);
+        }
+
+        :is(.dark) .nav-separator {
+            background: rgba(255 255 255 / 0.15);
+        }
+
+        .nav-page-size {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .page-size-label {
+            font-size: 12px;
+            color: rgb(107 114 128);
+            white-space: nowrap;
+        }
+
+        :is(.dark) .page-size-label {
+            color: rgb(156 163 175);
+        }
+
+        .page-size-select {
+            padding: 4px 24px 4px 8px;
+            border: 1px solid rgb(209 213 219);
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            background: white;
+            color: rgb(17 24 39);
+            cursor: pointer;
+            appearance: auto;
+        }
+
+        :is(.dark) .page-size-select {
+            background: rgb(31 41 55);
+            border-color: rgba(255 255 255 / 0.15);
+            color: white;
+        }
+
+        .page-size-select:focus {
+            outline: none;
+            border-color: rgb(59 130 246);
+            box-shadow: 0 0 0 2px rgba(59 130 246 / 0.25);
         }
 
         /* Tabelle */

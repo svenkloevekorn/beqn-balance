@@ -165,6 +165,7 @@ class BalanceTest extends TestCase
     public function test_customer_has_invoices_relationship(): void
     {
         $customer = Customer::first();
+        $existingCount = $customer->invoices()->count();
 
         Invoice::create([
             'invoice_number' => 'RE-2026-7777',
@@ -174,7 +175,8 @@ class BalanceTest extends TestCase
             'status' => 'draft',
         ]);
 
-        $this->assertCount(1, $customer->invoices);
+        $customer->refresh();
+        $this->assertCount($existingCount + 1, $customer->invoices);
     }
 
     public function test_supplier_has_incoming_invoices_relationship(): void
@@ -230,21 +232,25 @@ class BalanceTest extends TestCase
     public function test_number_range_generates_with_year(): void
     {
         $year = now()->year;
+        $range = NumberRange::where('type', 'invoice')->first();
+        $expectedNext = $range->counter_yearly + 1;
         $number = NumberRange::generateNext('invoice');
 
         $this->assertStringStartsWith("RE-{$year}-", $number);
-        $this->assertEquals("RE-{$year}-0001", $number);
+        $this->assertEquals("RE-{$year}-" . str_pad($expectedNext, 4, '0', STR_PAD_LEFT), $number);
     }
 
     public function test_number_range_increments(): void
     {
         $year = now()->year;
+        $range = NumberRange::where('type', 'invoice')->first();
+        $baseCounter = $range->counter_yearly;
 
         $first = NumberRange::generateNext('invoice');
         $second = NumberRange::generateNext('invoice');
 
-        $this->assertEquals("RE-{$year}-0001", $first);
-        $this->assertEquals("RE-{$year}-0002", $second);
+        $this->assertEquals("RE-{$year}-" . str_pad($baseCounter + 1, 4, '0', STR_PAD_LEFT), $first);
+        $this->assertEquals("RE-{$year}-" . str_pad($baseCounter + 2, 4, '0', STR_PAD_LEFT), $second);
     }
 
     public function test_number_range_without_year(): void
@@ -259,6 +265,7 @@ class BalanceTest extends TestCase
     public function test_number_range_preview_does_not_increment(): void
     {
         $range = NumberRange::where('type', 'quote')->first();
+        $counterBefore = $range->counter_yearly;
         $preview1 = $range->previewNext();
         $preview2 = $range->previewNext();
 
@@ -266,7 +273,7 @@ class BalanceTest extends TestCase
 
         // Zaehler darf sich nicht veraendert haben
         $range->refresh();
-        $this->assertEquals(0, $range->counter_yearly);
+        $this->assertEquals($counterBefore, $range->counter_yearly);
     }
 
     public function test_number_range_yearly_reset(): void

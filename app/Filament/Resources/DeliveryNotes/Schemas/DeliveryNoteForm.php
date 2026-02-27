@@ -77,7 +77,7 @@ class DeliveryNoteForm
                                             $customPrice = null;
                                             if ($customerId) {
                                                 $customer = Customer::find($customerId);
-                                                if ($customer && $customer->has_custom_prices) {
+                                                if ($customer && $customer->pricing_mode === 'custom_prices') {
                                                     $cap = CustomerArticlePrice::where('customer_id', $customerId)
                                                         ->where('article_id', $article->id)
                                                         ->where('is_active', true)

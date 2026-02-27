@@ -6,6 +6,7 @@ use App\Models\Article;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -79,6 +80,16 @@ class CustomerForm
                                             ->numeric()
                                             ->required()
                                             ->default(14),
+                                        Select::make('pricing_mode')
+                                            ->label('Preismodus')
+                                            ->options([
+                                                'none' => 'Kein Rabatt',
+                                                'percentage' => 'Prozentualer Rabatt',
+                                                'custom_prices' => 'Individuelle Preise',
+                                            ])
+                                            ->default('none')
+                                            ->required()
+                                            ->live(),
                                         TextInput::make('discount_percent')
                                             ->label('Kundenrabatt (%)')
                                             ->numeric()
@@ -86,12 +97,8 @@ class CustomerForm
                                             ->minValue(0)
                                             ->maxValue(100)
                                             ->suffix('%')
-                                            ->placeholder('z.B. 5.00'),
-                                        Toggle::make('has_custom_prices')
-                                            ->label('Individuelle Preise')
-                                            ->helperText('Wenn aktiv, werden individuelle Artikelpreise statt prozentualem Rabatt verwendet')
-                                            ->live()
-                                            ->columnSpanFull(),
+                                            ->placeholder('z.B. 5.00')
+                                            ->visible(fn (Get $get): bool => $get('pricing_mode') === 'percentage'),
                                     ]),
                                 Section::make('Notizen')
                                     ->schema([
@@ -105,7 +112,7 @@ class CustomerForm
                             ]),
                         Tab::make('Individuelle Preise')
                             ->icon(Heroicon::OutlinedCurrencyEuro)
-                            ->visible(fn (Get $get) => $get('has_custom_prices'))
+                            ->visible(fn (Get $get) => $get('pricing_mode') === 'custom_prices')
                             ->hiddenOn('create')
                             ->schema([
                                 Repeater::make('customPrices')

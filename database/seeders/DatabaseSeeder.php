@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Article;
 use App\Models\Category;
+use App\Models\CompanySetting;
 use App\Models\ContactPerson;
 use App\Models\Customer;
 use App\Models\DeliveryNote;
@@ -22,6 +23,27 @@ class DatabaseSeeder extends Seeder
 
     public function run(): void
     {
+        // Firmenstammdaten
+        CompanySetting::create([
+            'company_name' => 'BEQN Kaffeemanufaktur GmbH',
+            'legal_form' => 'GmbH',
+            'managing_director' => 'Thomas Brenner',
+            'street' => 'Roeststraße 12',
+            'zip' => '50678',
+            'city' => 'Koeln',
+            'country' => 'DE',
+            'phone' => '0221 33445566',
+            'fax' => '0221 33445567',
+            'email' => 'info@beqn-kaffee.de',
+            'website' => 'https://www.beqn-kaffee.de',
+            'vat_id' => 'DE316789012',
+            'tax_number' => '214/5678/0123',
+            'trade_register' => 'HRB 98765, Amtsgericht Koeln',
+            'bank_name' => 'Sparkasse KoelnBonn',
+            'iban' => 'DE89 3705 0198 0012 3456 78',
+            'bic' => 'COLSDE33XXX',
+        ]);
+
         // Rollen
         $allPermissions = [];
         foreach (Role::$resources as $resource => $label) {

@@ -49,12 +49,12 @@ class QuoteForm
                                 }
                                 $customer = Customer::find($state);
                                 if ($customer) {
-                                    if ($customer->has_custom_prices) {
+                                    if ($customer->pricing_mode === 'percentage' && $customer->discount_percent > 0) {
+                                        $set('discount_percent', $customer->discount_percent);
+                                        $set('apply_discount', true);
+                                    } else {
                                         $set('apply_discount', false);
                                         $set('discount_percent', null);
-                                    } else {
-                                        $set('discount_percent', $customer->discount_percent);
-                                        $set('apply_discount', (bool) $customer->discount_percent);
                                     }
                                 }
                             })
@@ -81,7 +81,7 @@ class QuoteForm
                         }
                         $customer = Customer::find($customerId);
 
-                        return (bool) $customer?->has_custom_prices;
+                        return (bool) ($customer?->pricing_mode === 'custom_prices');
                     })
                     ->schema([
                         Placeholder::make('custom_prices_hint')
@@ -103,7 +103,7 @@ class QuoteForm
                         }
                         $customer = Customer::find($customerId);
 
-                        return ! $customer?->has_custom_prices;
+                        return ! ($customer?->pricing_mode === 'custom_prices');
                     })
                     ->schema([
                         Checkbox::make('apply_discount')
@@ -147,7 +147,7 @@ class QuoteForm
                                             $customPrice = null;
                                             if ($customerId) {
                                                 $customer = Customer::find($customerId);
-                                                if ($customer && $customer->has_custom_prices) {
+                                                if ($customer && $customer->pricing_mode === 'custom_prices') {
                                                     $cap = CustomerArticlePrice::where('customer_id', $customerId)
                                                         ->where('article_id', $article->id)
                                                         ->where('is_active', true)

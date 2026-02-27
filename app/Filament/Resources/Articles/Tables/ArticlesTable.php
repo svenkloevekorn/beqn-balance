@@ -5,7 +5,9 @@ namespace App\Filament\Resources\Articles\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 class ArticlesTable
@@ -34,6 +36,17 @@ class ArticlesTable
                     ->label('MwSt')
                     ->suffix(' %')
                     ->sortable(),
+                IconColumn::make('is_active')
+                    ->label('Aktiv')
+                    ->boolean()
+                    ->sortable(),
+            ])
+            ->filters([
+                TernaryFilter::make('is_active')
+                    ->label('Aktiv')
+                    ->trueLabel('Nur aktive')
+                    ->falseLabel('Nur inaktive')
+                    ->placeholder('Alle'),
             ])
             ->recordActions([
                 EditAction::make(),

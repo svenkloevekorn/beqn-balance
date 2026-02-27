@@ -4,6 +4,8 @@ namespace App\Filament\Resources\DeliveryNotes\Schemas;
 
 use App\Enums\DeliveryNoteStatus;
 use App\Models\Article;
+use App\Models\Customer;
+use App\Models\CustomerArticlePrice;
 use App\Models\NumberRange;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Hidden;
@@ -11,6 +13,7 @@ use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -36,7 +39,8 @@ class DeliveryNoteForm
                             ->relationship('customer', 'name')
                             ->searchable()
                             ->preload()
-                            ->required(),
+                            ->required()
+                            ->live(),
                         DatePicker::make('delivery_date')
                             ->label('Lieferdatum')
                             ->default(now())
@@ -56,19 +60,36 @@ class DeliveryNoteForm
                             ->schema([
                                 Select::make('article_id')
                                     ->label('Artikel')
-                                    ->options(Article::pluck('name', 'id'))
+                                    ->options(Article::where('is_active', true)->pluck('name', 'id'))
                                     ->searchable()
                                     ->preload()
-                                    ->afterStateUpdated(function (Set $set, ?string $state) {
+                                    ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
                                         if (! $state) {
                                             return;
                                         }
                                         $article = Article::find($state);
                                         if ($article) {
                                             $set('description', $article->name);
-                                            $set('net_price', $article->net_price);
                                             $set('vat_rate', $article->vat_rate);
                                             $set('unit', $article->unit);
+
+                                            $customerId = $get('../../customer_id');
+                                            $customPrice = null;
+                                            if ($customerId) {
+                                                $customer = Customer::find($customerId);
+                                                if ($customer && $customer->has_custom_prices) {
+                                                    $cap = CustomerArticlePrice::where('customer_id', $customerId)
+                                                        ->where('article_id', $article->id)
+                                                        ->where('is_active', true)
+                                                        ->whereNotNull('custom_net_price')
+                                                        ->first();
+                                                    if ($cap) {
+                                                        $customPrice = $cap->custom_net_price;
+                                                    }
+                                                }
+                                            }
+
+                                            $set('net_price', $customPrice ?? $article->net_price);
                                         }
                                     })
                                     ->live()

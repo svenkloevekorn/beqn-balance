@@ -33,13 +33,20 @@ class Customer extends Model
         'discount_percent',
         'buyer_reference',
         'notes',
+        'has_custom_prices',
     ];
 
     protected function casts(): array
     {
         return [
             'discount_percent' => 'decimal:2',
+            'has_custom_prices' => 'boolean',
         ];
+    }
+
+    public function customPrices(): HasMany
+    {
+        return $this->hasMany(CustomerArticlePrice::class);
     }
 
     public function invoices(): HasMany

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -25,6 +26,7 @@ class Article extends Model
         'unit',
         'net_price',
         'vat_rate',
+        'is_active',
     ];
 
     public function categories(): BelongsToMany
@@ -32,11 +34,17 @@ class Article extends Model
         return $this->belongsToMany(Category::class);
     }
 
+    public function customerPrices(): HasMany
+    {
+        return $this->hasMany(CustomerArticlePrice::class);
+    }
+
     protected function casts(): array
     {
         return [
             'net_price' => 'decimal:2',
             'vat_rate' => 'decimal:2',
+            'is_active' => 'boolean',
         ];
     }
 }

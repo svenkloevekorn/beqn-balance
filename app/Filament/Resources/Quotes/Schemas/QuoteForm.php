@@ -5,6 +5,7 @@ namespace App\Filament\Resources\Quotes\Schemas;
 use App\Enums\QuoteStatus;
 use App\Models\Article;
 use App\Models\Customer;
+use App\Models\CustomerArticlePrice;
 use App\Models\NumberRange;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\DatePicker;
@@ -48,8 +49,13 @@ class QuoteForm
                                 }
                                 $customer = Customer::find($state);
                                 if ($customer) {
-                                    $set('discount_percent', $customer->discount_percent);
-                                    $set('apply_discount', (bool) $customer->discount_percent);
+                                    if ($customer->has_custom_prices) {
+                                        $set('apply_discount', false);
+                                        $set('discount_percent', null);
+                                    } else {
+                                        $set('discount_percent', $customer->discount_percent);
+                                        $set('apply_discount', (bool) $customer->discount_percent);
+                                    }
                                 }
                             })
                             ->live(),
@@ -66,8 +72,39 @@ class QuoteForm
                             ->default(QuoteStatus::Draft)
                             ->required(),
                     ]),
+                Section::make('Individuelle Preise')
+                    ->icon('heroicon-o-information-circle')
+                    ->visible(function (Get $get): bool {
+                        $customerId = $get('customer_id');
+                        if (! $customerId) {
+                            return false;
+                        }
+                        $customer = Customer::find($customerId);
+
+                        return (bool) $customer?->has_custom_prices;
+                    })
+                    ->schema([
+                        Placeholder::make('custom_prices_hint')
+                            ->label('')
+                            ->content(fn (Get $get): HtmlString => new HtmlString(
+                                '<div style="padding: 8px 12px; background: #eff6ff; border: 1px solid #bfdbfe; border-radius: 6px; color: #1e40af;">'
+                                . '<strong>Dieser Kunde hat individuelle Artikelpreise.</strong><br>'
+                                . 'Beim Hinzufuegen von Artikeln werden automatisch die hinterlegten Kundenpreise verwendet. '
+                                . 'Der prozentuale Kundenrabatt wird nicht angewendet.'
+                                . '</div>'
+                            )),
+                    ]),
                 Section::make('Rabatt')
                     ->columns(2)
+                    ->visible(function (Get $get): bool {
+                        $customerId = $get('customer_id');
+                        if (! $customerId) {
+                            return true;
+                        }
+                        $customer = Customer::find($customerId);
+
+                        return ! $customer?->has_custom_prices;
+                    })
                     ->schema([
                         Checkbox::make('apply_discount')
                             ->label('Kundenrabatt anwenden')
@@ -93,19 +130,36 @@ class QuoteForm
                             ->schema([
                                 Select::make('article_id')
                                     ->label('Artikel')
-                                    ->options(Article::pluck('name', 'id'))
+                                    ->options(Article::where('is_active', true)->pluck('name', 'id'))
                                     ->searchable()
                                     ->preload()
-                                    ->afterStateUpdated(function (Set $set, ?string $state) {
+                                    ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
                                         if (! $state) {
                                             return;
                                         }
                                         $article = Article::find($state);
                                         if ($article) {
                                             $set('description', $article->name);
-                                            $set('net_price', $article->net_price);
                                             $set('vat_rate', $article->vat_rate);
                                             $set('unit', $article->unit);
+
+                                            $customerId = $get('../../customer_id');
+                                            $customPrice = null;
+                                            if ($customerId) {
+                                                $customer = Customer::find($customerId);
+                                                if ($customer && $customer->has_custom_prices) {
+                                                    $cap = CustomerArticlePrice::where('customer_id', $customerId)
+                                                        ->where('article_id', $article->id)
+                                                        ->where('is_active', true)
+                                                        ->whereNotNull('custom_net_price')
+                                                        ->first();
+                                                    if ($cap) {
+                                                        $customPrice = $cap->custom_net_price;
+                                                    }
+                                                }
+                                            }
+
+                                            $set('net_price', $customPrice ?? $article->net_price);
                                         }
                                     })
                                     ->live()

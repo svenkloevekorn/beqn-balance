@@ -6,6 +6,7 @@ use App\Models\Category;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Schema;
 use Illuminate\Support\Facades\Log;
 
@@ -15,6 +16,10 @@ class ArticleForm
     {
         return $schema
             ->components([
+                Toggle::make('is_active')
+                    ->label('Aktiv')
+                    ->default(true)
+                    ->columnSpanFull(),
                 TextInput::make('name')
                     ->label('Bezeichnung')
                     ->required()

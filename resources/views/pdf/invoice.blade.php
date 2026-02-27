@@ -346,7 +346,12 @@
             @foreach($document->items->sortBy('sort_order') as $index => $item)
                 <tr>
                     <td>{{ $index + 1 }}</td>
-                    <td>{{ $item->description }}</td>
+                    <td>
+                        <strong>{{ $item->article?->name ?? $item->description }}</strong>
+                        @if($item->description)
+                            <br><span style="font-weight: normal; font-size: 9px; color: #555;">{{ $item->description }}</span>
+                        @endif
+                    </td>
                     <td class="right">{{ number_format($item->quantity, 2, ',', '.') }}</td>
                     <td>{{ $item->unit }}</td>
                     <td class="right">{{ number_format($item->net_price, 2, ',', '.') }} &euro;</td>

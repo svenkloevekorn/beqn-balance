@@ -71,7 +71,7 @@ class DeliveryNoteForm
                                         }
                                         $article = Article::find($state);
                                         if ($article) {
-                                            $set('description', $article->name);
+                                            $set('description', $article->description);
                                             $set('vat_rate', $article->vat_rate);
                                             $set('unit', $article->unit);
 

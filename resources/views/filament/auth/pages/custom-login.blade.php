@@ -4,7 +4,7 @@
         {{-- Linke Seite: Branding --}}
         <div class="relative flex flex-col justify-center items-center p-10 lg:p-16 lg:w-5/12 bg-gradient-to-br from-sky-500 via-sky-600 to-sky-700 text-white overflow-hidden">
             {{-- Dot-Pattern Hintergrund --}}
-            <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+            <div class="absolute inset-0 opacity-[0.15]" style="background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 24px 24px;"></div>
 
             {{-- Dekorative Glow-Elemente --}}
             <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
@@ -12,16 +12,16 @@
 
             <div class="relative z-10 text-center">
                 {{-- Text-Logo --}}
-                <div class="mb-6">
-                    <div class="text-3xl font-bold tracking-tight leading-none">balance</div>
-                    <div class="text-sm font-medium tracking-widest uppercase text-sky-200 mt-1">by BEQN</div>
+                <div class="mb-5">
+                    <div class="text-2xl font-bold tracking-tight leading-none">balance</div>
+                    <div class="text-xs font-medium tracking-[0.2em] uppercase text-sky-200 mt-1.5">by BEQN</div>
                 </div>
 
                 {{-- Trennlinie --}}
-                <div class="w-10 h-px bg-sky-300/50 mx-auto mb-6"></div>
+                <div class="w-8 h-px bg-sky-300/50 mx-auto mb-5"></div>
 
                 {{-- Slogan --}}
-                <p class="text-base font-light leading-relaxed text-sky-100">
+                <p class="text-sm font-light leading-relaxed text-sky-100">
                     Dein Business<br>
                     <span class="font-semibold text-white">im Gleichgewicht</span> halten.
                 </p>
@@ -31,10 +31,10 @@
         {{-- Rechte Seite: Login-Formular --}}
         <div class="flex flex-col justify-center p-10 lg:p-16 lg:w-7/12 bg-white dark:bg-gray-900">
             <div class="w-full max-w-sm mx-auto">
-                <h2 class="text-xl font-semibold text-gray-900 dark:text-white mb-1">
+                <h2 class="text-lg font-semibold text-gray-900 dark:text-white mb-1">
                     Willkommen zurück
                 </h2>
-                <p class="text-sm text-gray-500 dark:text-gray-400 mb-8">
+                <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
                     Melde dich an, um fortzufahren.
                 </p>
 

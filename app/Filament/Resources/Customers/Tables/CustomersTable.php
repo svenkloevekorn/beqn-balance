@@ -60,11 +60,13 @@ class CustomersTable
                 SelectFilter::make('city')
                     ->label('Ort')
                     ->options(fn () => Customer::whereNotNull('city')->where('city', '!=', '')->distinct()->orderBy('city')->pluck('city', 'city')->toArray())
-                    ->searchable(),
+                    ->searchable()
+                    ->multiple(),
                 SelectFilter::make('zip')
                     ->label('PLZ')
                     ->options(fn () => Customer::whereNotNull('zip')->where('zip', '!=', '')->distinct()->orderBy('zip')->pluck('zip', 'zip')->toArray())
-                    ->searchable(),
+                    ->searchable()
+                    ->multiple(),
             ])
             ->recordActions([
                 EditAction::make(),

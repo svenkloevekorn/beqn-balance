@@ -7,6 +7,7 @@ use Filament\Actions\CreateAction;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Resources\Pages\ListRecords;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\HtmlString;
 
 class ListCustomers extends ListRecords
 {
@@ -17,6 +18,16 @@ class ListCustomers extends ListRecords
         return [
             CreateAction::make(),
         ];
+    }
+
+    public function getSubheading(): string|HtmlString|null
+    {
+        $count = $this->getFilteredTableQuery()->count();
+
+        return new HtmlString(
+            '<span style="display:inline-flex;align-items:center;gap:0.25rem;padding:0.25rem 0.625rem;font-size:0.875rem;font-weight:500;border-radius:0.375rem;background:#ecfdf5;color:#059669;border:1px solid rgba(5,150,105,0.2);">'
+            . $count . ' Kunden gefunden</span>'
+        );
     }
 
     public function getTabs(): array

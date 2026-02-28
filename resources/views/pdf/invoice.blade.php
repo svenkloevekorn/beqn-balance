@@ -334,12 +334,23 @@
         <thead>
             <tr>
                 <th style="width: 5%">Pos.</th>
-                <th style="width: 40%">Beschreibung</th>
-                <th class="right" style="width: 10%">Menge</th>
-                <th style="width: 10%">Einheit</th>
-                <th class="right" style="width: 15%">Einzelpreis</th>
-                <th class="right" style="width: 8%">MwSt</th>
-                <th class="right" style="width: 12%">Gesamt</th>
+                @if(!empty($discount))
+                    <th style="width: 28%">Beschreibung</th>
+                    <th class="right" style="width: 8%">Menge</th>
+                    <th style="width: 8%">Einheit</th>
+                    <th class="right" style="width: 12%">Listenpreis</th>
+                    <th class="right" style="width: 8%">Rabatt</th>
+                    <th class="right" style="width: 12%">Einzelpreis</th>
+                    <th class="right" style="width: 7%">MwSt</th>
+                    <th class="right" style="width: 12%">Gesamt</th>
+                @else
+                    <th style="width: 40%">Beschreibung</th>
+                    <th class="right" style="width: 10%">Menge</th>
+                    <th style="width: 10%">Einheit</th>
+                    <th class="right" style="width: 15%">Einzelpreis</th>
+                    <th class="right" style="width: 8%">MwSt</th>
+                    <th class="right" style="width: 12%">Gesamt</th>
+                @endif
             </tr>
         </thead>
         <tbody>
@@ -354,6 +365,14 @@
                     </td>
                     <td class="right">{{ number_format($item->quantity, 2, ',', '.') }}</td>
                     <td>{{ $item->unit }}</td>
+                    @if(!empty($discount))
+                        <td class="right" style="text-decoration: line-through; color: #999;">
+                            {{ number_format($item->article?->net_price ?? $item->net_price, 2, ',', '.') }} &euro;
+                        </td>
+                        <td class="right" style="color: #dc2626;">
+                            -{{ number_format($discount['percent'], 2, ',', '.') }} %
+                        </td>
+                    @endif
                     <td class="right">{{ number_format($item->net_price, 2, ',', '.') }} &euro;</td>
                     <td class="right">{{ number_format($item->vat_rate, 0) }} %</td>
                     <td class="right">{{ number_format($item->line_total, 2, ',', '.') }} &euro;</td>
@@ -371,32 +390,23 @@
             </tr>
 
             @if(!empty($discount))
-                <tr class="discount">
-                    <td class="label">Rabatt ({{ number_format($discount['percent'], 2, ',', '.') }} %):</td>
-                    <td class="value">-{{ number_format($discount['amount'], 2, ',', '.') }} &euro;</td>
-                </tr>
                 <tr>
-                    <td class="label">Netto nach Rabatt:</td>
-                    <td class="value">{{ number_format($discount['netAfter'], 2, ',', '.') }} &euro;</td>
+                    <td colspan="2" style="font-size: 8px; color: #888; font-style: italic; padding: 1px 10px;">
+                        inkl. {{ number_format($discount['percent'], 2, ',', '.') }} % Kundenrabatt
+                    </td>
                 </tr>
             @endif
 
             @php
                 $items = $document->items;
                 $vatGroups = [];
-                $netBase = !empty($discount) ? $discount['netAfter'] : $document->net_total;
-                $netTotal = $document->net_total;
 
                 foreach ($items as $item) {
                     $rate = number_format($item->vat_rate, 2);
                     if (!isset($vatGroups[$rate])) {
                         $vatGroups[$rate] = 0;
                     }
-                    $lineVat = $item->line_total * $item->vat_rate / 100;
-                    if (!empty($discount) && $netTotal > 0) {
-                        $lineVat = $lineVat * $netBase / $netTotal;
-                    }
-                    $vatGroups[$rate] += $lineVat;
+                    $vatGroups[$rate] += $item->line_total * $item->vat_rate / 100;
                 }
                 ksort($vatGroups);
             @endphp

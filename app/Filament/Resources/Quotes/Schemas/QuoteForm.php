@@ -110,6 +110,40 @@ class QuoteForm
                             ->label('Kundenrabatt anwenden')
                             ->default(true)
                             ->live()
+                            ->afterStateUpdated(function (Set $set, Get $get, ?bool $state) {
+                                $items = $get('items') ?? [];
+                                $discountPercent = (float) ($get('discount_percent') ?? 0);
+                                foreach ($items as $key => $item) {
+                                    $articleId = $item['article_id'] ?? null;
+                                    if (! $articleId) {
+                                        continue;
+                                    }
+                                    $article = Article::find($articleId);
+                                    if (! $article) {
+                                        continue;
+                                    }
+                                    $listPrice = $article->net_price;
+                                    $customerId = $get('customer_id');
+                                    if ($customerId) {
+                                        $customer = Customer::find($customerId);
+                                        if ($customer && $customer->pricing_mode === 'custom_prices') {
+                                            $cap = CustomerArticlePrice::where('customer_id', $customerId)
+                                                ->where('article_id', $articleId)
+                                                ->where('is_active', true)
+                                                ->whereNotNull('custom_net_price')
+                                                ->first();
+                                            if ($cap) {
+                                                $listPrice = $cap->custom_net_price;
+                                            }
+                                        }
+                                    }
+                                    if ($state && $discountPercent > 0) {
+                                        $set("items.{$key}.net_price", round($listPrice * (1 - $discountPercent / 100), 2));
+                                    } else {
+                                        $set("items.{$key}.net_price", $listPrice);
+                                    }
+                                }
+                            })
                             ->columnSpanFull(),
                         TextInput::make('discount_percent')
                             ->label('Rabatt (%)')
@@ -119,6 +153,41 @@ class QuoteForm
                             ->maxValue(100)
                             ->suffix('%')
                             ->live(onBlur: true)
+                            ->afterStateUpdated(function (Set $set, Get $get, ?string $state) {
+                                $applyDiscount = $get('apply_discount');
+                                $discountPercent = (float) ($state ?? 0);
+                                $items = $get('items') ?? [];
+                                foreach ($items as $key => $item) {
+                                    $articleId = $item['article_id'] ?? null;
+                                    if (! $articleId) {
+                                        continue;
+                                    }
+                                    $article = Article::find($articleId);
+                                    if (! $article) {
+                                        continue;
+                                    }
+                                    $listPrice = $article->net_price;
+                                    $customerId = $get('customer_id');
+                                    if ($customerId) {
+                                        $customer = Customer::find($customerId);
+                                        if ($customer && $customer->pricing_mode === 'custom_prices') {
+                                            $cap = CustomerArticlePrice::where('customer_id', $customerId)
+                                                ->where('article_id', $articleId)
+                                                ->where('is_active', true)
+                                                ->whereNotNull('custom_net_price')
+                                                ->first();
+                                            if ($cap) {
+                                                $listPrice = $cap->custom_net_price;
+                                            }
+                                        }
+                                    }
+                                    if ($applyDiscount && $discountPercent > 0) {
+                                        $set("items.{$key}.net_price", round($listPrice * (1 - $discountPercent / 100), 2));
+                                    } else {
+                                        $set("items.{$key}.net_price", $listPrice);
+                                    }
+                                }
+                            })
                             ->visible(fn (callable $get) => $get('apply_discount')),
                     ]),
                 Section::make('Positionen')
@@ -144,6 +213,7 @@ class QuoteForm
                                             $set('unit', $article->unit);
 
                                             $customerId = $get('../../customer_id');
+                                            $listPrice = $article->net_price;
                                             $customPrice = null;
                                             if ($customerId) {
                                                 $customer = Customer::find($customerId);
@@ -159,7 +229,15 @@ class QuoteForm
                                                 }
                                             }
 
-                                            $set('net_price', $customPrice ?? $article->net_price);
+                                            $basePrice = $customPrice ?? $listPrice;
+
+                                            $applyDiscount = $get('../../apply_discount');
+                                            $discountPercent = (float) ($get('../../discount_percent') ?? 0);
+                                            if ($applyDiscount && $discountPercent > 0) {
+                                                $set('net_price', round($basePrice * (1 - $discountPercent / 100), 2));
+                                            } else {
+                                                $set('net_price', $basePrice);
+                                            }
                                         }
                                     })
                                     ->live()
@@ -167,7 +245,7 @@ class QuoteForm
                                 TextInput::make('description')
                                     ->label('Beschreibung')
                                     ->required()
-                                    ->columnSpan(3),
+                                    ->columnSpan(fn (Get $get): int => ($get('../../apply_discount') && ((float) ($get('../../discount_percent') ?? 0)) > 0) ? 2 : 3),
                                 TextInput::make('quantity')
                                     ->label('Menge')
                                     ->numeric()
@@ -180,6 +258,39 @@ class QuoteForm
                                     ->label('Einheit')
                                     ->default('Stück')
                                     ->required()
+                                    ->columnSpan(1),
+                                Placeholder::make('list_price_display')
+                                    ->label('Listenpreis')
+                                    ->content(function (Get $get): HtmlString {
+                                        $articleId = $get('article_id');
+                                        if (! $articleId) {
+                                            return new HtmlString('–');
+                                        }
+                                        $article = Article::find($articleId);
+                                        if (! $article) {
+                                            return new HtmlString('–');
+                                        }
+                                        $listPrice = number_format((float) $article->net_price, 2, ',', '.');
+                                        return new HtmlString(
+                                            '<span style="text-decoration: line-through; color: #9ca3af;">' . $listPrice . ' &euro;</span>'
+                                        );
+                                    })
+                                    ->visible(fn (Get $get): bool => (bool) $get('../../apply_discount') && ((float) ($get('../../discount_percent') ?? 0)) > 0)
+                                    ->columnSpan(1),
+                                Placeholder::make('discount_badge')
+                                    ->label('Rabatt')
+                                    ->content(function (Get $get): HtmlString {
+                                        $discountPercent = (float) ($get('../../discount_percent') ?? 0);
+                                        if ($discountPercent <= 0) {
+                                            return new HtmlString('');
+                                        }
+                                        return new HtmlString(
+                                            '<span style="display: inline-flex; align-items: center; padding: 2px 8px; background: #fef2f2; border: 1px solid #fca5a5; border-radius: 9999px; font-size: 12px; color: #dc2626; font-weight: 600;">'
+                                            . '-' . number_format($discountPercent, 2, ',', '.') . ' %'
+                                            . '</span>'
+                                        );
+                                    })
+                                    ->visible(fn (Get $get): bool => (bool) $get('../../apply_discount') && ((float) ($get('../../discount_percent') ?? 0)) > 0)
                                     ->columnSpan(1),
                                 TextInput::make('net_price')
                                     ->label('Nettopreis (€)')
@@ -200,6 +311,7 @@ class QuoteForm
                                         if (! $article) {
                                             return;
                                         }
+                                        $basePrice = $article->net_price;
                                         $customerId = $get('../../customer_id');
                                         if ($customerId) {
                                             $customer = Customer::find($customerId);
@@ -210,12 +322,17 @@ class QuoteForm
                                                     ->whereNotNull('custom_net_price')
                                                     ->first();
                                                 if ($cap) {
-                                                    $set('net_price', $cap->custom_net_price);
-                                                    return;
+                                                    $basePrice = $cap->custom_net_price;
                                                 }
                                             }
                                         }
-                                        $set('net_price', $article->net_price);
+                                        $applyDiscount = $get('../../apply_discount');
+                                        $discountPercent = (float) ($get('../../discount_percent') ?? 0);
+                                        if ($applyDiscount && $discountPercent > 0) {
+                                            $set('net_price', round($basePrice * (1 - $discountPercent / 100), 2));
+                                        } else {
+                                            $set('net_price', $basePrice);
+                                        }
                                     })
                                     ->columnSpan(1),
                                 Select::make('vat_rate')
@@ -262,7 +379,7 @@ class QuoteForm
                                 Hidden::make('sort_order')
                                     ->default(0),
                             ])
-                            ->columns(9)
+                            ->columns(fn (Get $get): int => ($get('apply_discount') && ((float) ($get('discount_percent') ?? 0)) > 0) ? 11 : 9)
                             ->defaultItems(1)
                             ->reorderable()
                             ->reorderableWithButtons()
@@ -301,23 +418,6 @@ class QuoteForm
 
                                 $applyDiscount = $get('apply_discount');
                                 $discountPercent = (float) ($get('discount_percent') ?? 0);
-                                $discountAmount = 0;
-                                $netAfterDiscount = $netTotal;
-
-                                if ($applyDiscount && $discountPercent > 0) {
-                                    $discountAmount = round($netTotal * $discountPercent / 100, 2);
-                                    $netAfterDiscount = $netTotal - $discountAmount;
-                                    $vatTotal = 0;
-                                    $adjustedVatGroups = [];
-                                    foreach ($vatGroups as $rate => $vat) {
-                                        $factor = $netTotal > 0 ? ($netTotal - $discountAmount) / $netTotal : 0;
-                                        $adjustedVat = round($vat * $factor, 2);
-                                        $adjustedVatGroups[$rate] = $adjustedVat;
-                                        $vatTotal += $adjustedVat;
-                                    }
-                                    $vatGroups = $adjustedVatGroups;
-                                    $grossTotal = $netAfterDiscount + $vatTotal;
-                                }
 
                                 $fmt = fn ($v) => number_format($v, 2, ',', '.');
 
@@ -328,10 +428,7 @@ class QuoteForm
                                 $html .= '<td style="padding: 4px 12px; text-align: right;">' . $fmt($netTotal) . ' &euro;</td></tr>';
 
                                 if ($applyDiscount && $discountPercent > 0) {
-                                    $html .= '<tr><td style="padding: 4px 12px; color: #dc2626;">Rabatt (' . $fmt($discountPercent) . ' %)</td>';
-                                    $html .= '<td style="padding: 4px 12px; text-align: right; color: #dc2626;">-' . $fmt($discountAmount) . ' &euro;</td></tr>';
-                                    $html .= '<tr><td style="padding: 4px 12px;">Netto nach Rabatt</td>';
-                                    $html .= '<td style="padding: 4px 12px; text-align: right;">' . $fmt($netAfterDiscount) . ' &euro;</td></tr>';
+                                    $html .= '<tr><td colspan="2" style="padding: 4px 12px; font-size: 12px; color: #6b7280; font-style: italic;">inkl. ' . $fmt($discountPercent) . ' % Kundenrabatt</td></tr>';
                                 }
 
                                 foreach ($vatGroups as $rate => $vat) {

@@ -29,6 +29,9 @@ class PdfService
             'extraFields' => [
                 'Faelligkeitsdatum' => $invoice->due_date?->format('d.m.Y'),
             ],
+            'discount' => $invoice->apply_discount && $invoice->discount_percent > 0 ? [
+                'percent' => $invoice->discount_percent,
+            ] : null,
         ]);
 
         $pdf->setPaper('a4');
@@ -71,8 +74,6 @@ class PdfService
             ],
             'discount' => $quote->apply_discount && $quote->discount_percent > 0 ? [
                 'percent' => $quote->discount_percent,
-                'amount' => $quote->discount_amount,
-                'netAfter' => $quote->net_total_after_discount,
             ] : null,
         ]);
 

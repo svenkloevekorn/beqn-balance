@@ -7,11 +7,14 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class CustomLogin extends BaseLogin
 {
-    protected string $view = 'filament.auth.pages.custom-login';
-
-    public function getHeading(): string|Htmlable
+    public function getView(): string
     {
-        return '';
+        return 'filament.auth.pages.custom-login';
+    }
+
+    public function getHeading(): string|Htmlable|null
+    {
+        return null;
     }
 
     public function hasLogo(): bool

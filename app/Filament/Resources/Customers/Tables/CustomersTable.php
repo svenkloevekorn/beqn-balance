@@ -21,17 +21,21 @@ class CustomersTable
                     ->sortable(),
                 TextColumn::make('city')
                     ->label('Ort')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('email')
                     ->label('E-Mail')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('phone')
                     ->label('Telefon')
-                    ->searchable(),
+                    ->searchable()
+                    ->toggleable(),
                 TextColumn::make('payment_term_days')
                     ->label('Zahlungsziel')
                     ->suffix(' Tage')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 IconColumn::make('pricing_mode')
                     ->label('Preismodus')
                     ->icon(fn (string $state): string => match ($state) {

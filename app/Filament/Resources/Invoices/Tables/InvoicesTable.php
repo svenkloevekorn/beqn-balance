@@ -101,7 +101,9 @@ class InvoicesTable
                     )),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->label('')
+                    ->tooltip('Bearbeiten'),
                 Action::make('addPayment')
                     ->label('Zahlung erfassen')
                     ->icon(Heroicon::OutlinedBanknotes)

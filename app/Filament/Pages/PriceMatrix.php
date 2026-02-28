@@ -14,7 +14,7 @@ class PriceMatrix extends Page
 {
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Kunden';
+    protected static string|\UnitEnum|null $navigationGroup = 'Artikel';
 
     protected static ?string $navigationLabel = 'Preismatrix';
 

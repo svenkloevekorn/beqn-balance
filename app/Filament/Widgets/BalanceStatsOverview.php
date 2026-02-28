@@ -10,7 +10,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class BalanceStatsOverview extends StatsOverviewWidget
 {
-    protected static ?int $sort = -3;
+    protected static ?int $sort = -7;
 
     protected function getStats(): array
     {

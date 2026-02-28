@@ -5,10 +5,12 @@ namespace App\Filament\Resources\Customers\Pages;
 use App\Filament\Resources\Customers\CustomerResource;
 use App\Models\Article;
 use Filament\Actions\DeleteAction;
+use App\Filament\Concerns\RedirectsToListPage;
 use Filament\Resources\Pages\EditRecord;
 
 class EditCustomer extends EditRecord
 {
+    use RedirectsToListPage;
     protected static string $resource = CustomerResource::class;
 
     protected function getHeaderActions(): array

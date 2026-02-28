@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Imports\ArticlesImport;
 use App\Imports\CustomersImport;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -33,19 +34,34 @@ class ImportExport extends Page
     {
         return [
             $this->getDownloadCustomerTemplateAction(),
+            $this->getDownloadArticleTemplateAction(),
         ];
     }
 
     protected function getDownloadCustomerTemplateAction(): Action
     {
         return Action::make('downloadCustomerTemplate')
-            ->label('Kunden-Vorlage herunterladen')
+            ->label('Kunden-Vorlage')
             ->icon('heroicon-o-arrow-down-tray')
             ->color('gray')
             ->action(function () {
                 return response()->download(
                     resource_path('templates/kunden_import_vorlage.csv'),
                     'kunden_import_vorlage.csv'
+                );
+            });
+    }
+
+    protected function getDownloadArticleTemplateAction(): Action
+    {
+        return Action::make('downloadArticleTemplate')
+            ->label('Artikel-Vorlage')
+            ->icon('heroicon-o-arrow-down-tray')
+            ->color('gray')
+            ->action(function () {
+                return response()->download(
+                    resource_path('templates/artikel_import_vorlage.csv'),
+                    'artikel_import_vorlage.csv'
                 );
             });
     }
@@ -114,6 +130,63 @@ class ImportExport extends Page
                                                 })
                                                 ->modalHeading('Kunden importieren')
                                                 ->modalDescription('Lade eine CSV- oder Excel-Datei mit Kundendaten hoch.')
+                                                ->modalSubmitActionLabel('Importieren'),
+                                        ]),
+                                    ]),
+
+                                Section::make('Artikel importieren')
+                                    ->description('CSV- oder Excel-Datei hochladen. Bestehende Artikel (gleicher Name) werden aktualisiert.')
+                                    ->icon(Heroicon::OutlinedCube)
+                                    ->schema([
+                                        \Filament\Schemas\Components\Actions::make([
+                                            Action::make('importArticles')
+                                                ->label('Artikel importieren')
+                                                ->icon('heroicon-o-arrow-up-tray')
+                                                ->form([
+                                                    FileUpload::make('file')
+                                                        ->label('CSV- oder Excel-Datei')
+                                                        ->acceptedFileTypes([
+                                                            'text/csv',
+                                                            'application/vnd.ms-excel',
+                                                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                                        ])
+                                                        ->required()
+                                                        ->storeFiles(false),
+                                                ])
+                                                ->action(function (array $data) {
+                                                    $import = new ArticlesImport();
+
+                                                    try {
+                                                        Excel::import($import, $data['file']);
+                                                    } catch (\Exception $e) {
+                                                        Notification::make()
+                                                            ->title('Import fehlgeschlagen')
+                                                            ->body('Fehler: ' . $e->getMessage())
+                                                            ->danger()
+                                                            ->send();
+
+                                                        return;
+                                                    }
+
+                                                    $parts = [];
+                                                    if ($import->imported > 0) {
+                                                        $parts[] = $import->imported . ' neu angelegt';
+                                                    }
+                                                    if ($import->updated > 0) {
+                                                        $parts[] = $import->updated . ' aktualisiert';
+                                                    }
+                                                    if ($import->skipped > 0) {
+                                                        $parts[] = $import->skipped . ' übersprungen';
+                                                    }
+
+                                                    Notification::make()
+                                                        ->title('Artikel-Import abgeschlossen')
+                                                        ->body(implode(', ', $parts) ?: 'Keine Daten importiert.')
+                                                        ->success()
+                                                        ->send();
+                                                })
+                                                ->modalHeading('Artikel importieren')
+                                                ->modalDescription('Lade eine CSV- oder Excel-Datei mit Artikeldaten hoch.')
                                                 ->modalSubmitActionLabel('Importieren'),
                                         ]),
                                     ]),

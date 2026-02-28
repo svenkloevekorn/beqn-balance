@@ -1,0 +1,3 @@
+Name,Strasse,PLZ,Ort,Land,Email,Telefon,USt_ID,Zahlungsziel_Tage,Rabatt_Prozent,Kaeufer_Referenz,Notizen
+Musterfirma GmbH,Musterstraße 1,12345,Berlin,DE,info@musterfirma.de,030-12345678,DE123456789,30,5.00,REF-001,VIP-Kunde
+Max Müller Einzelunternehmen,Hauptstraße 42,80331,München,DE,max@mueller.de,089-9876543,,14,,,Neukunde

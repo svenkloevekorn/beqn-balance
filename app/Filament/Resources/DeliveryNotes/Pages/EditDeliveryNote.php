@@ -7,11 +7,13 @@ use App\Filament\Resources\DeliveryNotes\DeliveryNoteResource;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use App\Filament\Concerns\RedirectsToListPage;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 
 class EditDeliveryNote extends EditRecord
 {
+    use RedirectsToListPage;
     protected static string $resource = DeliveryNoteResource::class;
 
     protected function getHeaderActions(): array

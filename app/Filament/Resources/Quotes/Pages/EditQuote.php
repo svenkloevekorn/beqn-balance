@@ -10,12 +10,14 @@ use App\Services\PdfService;
 use App\Services\QuoteConversionService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use App\Filament\Concerns\RedirectsToListPage;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 
 class EditQuote extends EditRecord
 {
+    use RedirectsToListPage;
     protected static string $resource = QuoteResource::class;
 
     protected function getHeaderActions(): array

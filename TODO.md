@@ -13,7 +13,7 @@
 - [ ] Kundenportal — Kunden können ihre Rechnungen/Angebote online einsehen und Angebote annehmen
 - [ ] Hinweise am Kunden hintelegen können die dann an diversen stellen als info auftauchen können
 - [] List view von rechnungen bei bearbeiten nur ein icon nicht den tet beareiten
-- [] in kundenliste filtern nach preismodus
+- [] in kundenliste filtern nach preismodus verwende dafür die fillament tabs über der liste
 
 
 ## Erledigt

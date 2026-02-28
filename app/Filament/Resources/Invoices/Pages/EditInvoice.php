@@ -7,11 +7,13 @@ use App\Filament\Resources\Invoices\InvoiceResource;
 use App\Services\PdfService;
 use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
+use App\Filament\Concerns\RedirectsToListPage;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Support\Icons\Heroicon;
 
 class EditInvoice extends EditRecord
 {
+    use RedirectsToListPage;
     protected static string $resource = InvoiceResource::class;
 
     protected function getHeaderActions(): array

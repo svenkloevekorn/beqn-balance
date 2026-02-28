@@ -10,8 +10,10 @@ use App\Filament\Auth\Pages\CustomLogin;
 use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
+use Filament\Support\Assets\Css;
 use Filament\Support\Colors\Color;
 use Filament\Support\Enums\Width;
+use Filament\Support\Facades\FilamentAsset;
 use Filament\Navigation\NavigationGroup;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
@@ -22,6 +24,13 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class AdminPanelProvider extends PanelProvider
 {
+    public function boot(): void
+    {
+        FilamentAsset::register([
+            Css::make('custom', asset('css/filament.css')),
+        ]);
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel

@@ -3,27 +3,25 @@
 
         {{-- Linke Seite: Branding --}}
         <div class="relative flex flex-col justify-center items-center p-10 lg:p-16 lg:w-5/12 bg-gradient-to-br from-sky-500 via-sky-600 to-sky-700 text-white overflow-hidden">
-            {{-- Dot-Pattern Hintergrund --}}
-            <div class="absolute inset-0 opacity-[0.15]" style="background-image: radial-gradient(circle, #fff 1px, transparent 1px); background-size: 24px 24px;"></div>
+            {{-- Dot-Pattern --}}
+            <div class="absolute inset-0 opacity-[0.15] login-dot-pattern"></div>
 
-            {{-- Dekorative Glow-Elemente --}}
+            {{-- Glow --}}
             <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
             <div class="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl"></div>
 
             <div class="relative z-10 text-center">
                 {{-- Text-Logo --}}
                 <div class="mb-5">
-                    <div class="text-2xl font-bold tracking-tight leading-none">balance</div>
-                    <div class="text-xs font-medium tracking-[0.2em] uppercase text-sky-200 mt-1.5">by BEQN</div>
+                    <div class="login-brand">balance by BEQN</div>
                 </div>
 
                 {{-- Trennlinie --}}
                 <div class="w-8 h-px bg-sky-300/50 mx-auto mb-5"></div>
 
                 {{-- Slogan --}}
-                <p class="text-sm font-light leading-relaxed text-sky-100">
-                    Dein Business<br>
-                    <span class="font-semibold text-white">im Gleichgewicht</span> halten.
+                <p class="login-slogan">
+                    Dein Business im Gleichgewicht halten.
                 </p>
             </div>
         </div>

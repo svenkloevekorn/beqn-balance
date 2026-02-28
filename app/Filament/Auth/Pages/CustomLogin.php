@@ -7,6 +7,13 @@ use Illuminate\Contracts\Support\Htmlable;
 
 class CustomLogin extends BaseLogin
 {
+    public function mount(): void
+    {
+        parent::mount();
+
+        $this->view = 'filament.auth.pages.custom-login';
+    }
+
     public function getView(): string
     {
         return 'filament.auth.pages.custom-login';

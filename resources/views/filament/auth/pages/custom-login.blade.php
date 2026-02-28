@@ -3,7 +3,10 @@
 
         {{-- Linke Seite: Branding --}}
         <div class="relative flex flex-col justify-center items-center p-10 lg:p-16 lg:w-5/12 bg-gradient-to-br from-sky-500 via-sky-600 to-sky-700 text-white overflow-hidden">
-            {{-- Dekorative Elemente --}}
+            {{-- Dot-Pattern Hintergrund --}}
+            <div class="absolute inset-0 opacity-[0.07]" style="background-image: radial-gradient(circle, rgba(255,255,255,0.8) 1px, transparent 1px); background-size: 20px 20px;"></div>
+
+            {{-- Dekorative Glow-Elemente --}}
             <div class="absolute -top-20 -right-20 h-48 w-48 rounded-full bg-white/10 blur-2xl"></div>
             <div class="absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-sky-400/20 blur-3xl"></div>
 

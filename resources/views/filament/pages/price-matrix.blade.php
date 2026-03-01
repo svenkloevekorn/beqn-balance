@@ -63,38 +63,47 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($articles as $article)
-                        <tr>
-                            <td class="article-name">
-                                {{ $article['name'] }}
+                    @foreach($groupedArticles as $group)
+                        <tr class="group-header">
+                            <td colspan="{{ 2 + count($visibleCustomers) }}">
+                                <span class="group-color-dot" style="background: {{ $group['color'] }}"></span>
+                                {{ $group['name'] }}
+                                <span class="group-count">{{ count($group['articles']) }}</span>
                             </td>
-                            <td class="netto-price">
-                                {{ number_format((float) $article['net_price'], 2, ',', '.') }}&nbsp;&euro;
-                            </td>
-                            @foreach($visibleCustomers as $customer)
-                                @php
-                                    $key = $article['id'] . '_' . $customer['id'];
-                                    $currentValue = $prices[$key] ?? '';
-                                @endphp
-                                <td class="price-cell">
-                                    <input
-                                        type="text"
-                                        inputmode="decimal"
-                                        class="price-input {{ $currentValue !== '' ? 'has-value' : '' }}"
-                                        value="{{ $currentValue !== '' ? number_format((float) $currentValue, 2, ',', '.') : '' }}"
-                                        placeholder="—"
-                                        wire:change="updatePrice({{ $article['id'] }}, {{ $customer['id'] }}, $event.target.value)"
-                                    >
-                                </td>
-                            @endforeach
                         </tr>
+                        @foreach($group['articles'] as $article)
+                            <tr>
+                                <td class="article-name">
+                                    {{ $article['name'] }}
+                                </td>
+                                <td class="netto-price">
+                                    {{ number_format((float) $article['net_price'], 2, ',', '.') }}&nbsp;&euro;
+                                </td>
+                                @foreach($visibleCustomers as $customer)
+                                    @php
+                                        $key = $article['id'] . '_' . $customer['id'];
+                                        $currentValue = $prices[$key] ?? '';
+                                    @endphp
+                                    <td class="price-cell">
+                                        <input
+                                            type="text"
+                                            inputmode="decimal"
+                                            class="price-input {{ $currentValue !== '' ? 'has-value' : '' }}"
+                                            value="{{ $currentValue !== '' ? number_format((float) $currentValue, 2, ',', '.') : '' }}"
+                                            placeholder="—"
+                                            wire:change="updatePrice({{ $article['id'] }}, {{ $customer['id'] }}, $event.target.value)"
+                                        >
+                                    </td>
+                                @endforeach
+                            </tr>
+                        @endforeach
                     @endforeach
                 </tbody>
             </table>
         </div>
 
         <div class="mt-3 text-xs text-gray-400 dark:text-gray-500 flex items-center gap-4">
-            <span>{{ count($articles) }} Artikel</span>
+            <span>{{ collect($groupedArticles)->sum(fn ($g) => count($g['articles'])) }} Artikel in {{ count($groupedArticles) }} Gruppen</span>
             <span>{{ $totalCustomers }} Kunden</span>
             <span>Preis eingeben = aktiv &middot; Feld leeren = deaktiviert</span>
             <span class="ml-auto">Pfeiltasten &larr; &rarr; zum Bl&auml;ttern</span>
@@ -220,6 +229,58 @@
             outline: none;
             border-color: rgb(59 130 246);
             box-shadow: 0 0 0 2px rgba(59 130 246 / 0.25);
+        }
+
+        /* Gruppen-Header */
+        .group-header td {
+            background: rgb(249 250 251);
+            padding: 8px 12px !important;
+            font-size: 12px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: rgb(55 65 81);
+            border-bottom: 1px solid rgb(229 231 235) !important;
+            border-top: 2px solid rgb(229 231 235) !important;
+        }
+
+        :is(.dark) .group-header td {
+            background: rgba(255 255 255 / 0.04);
+            color: rgb(209 213 219);
+            border-bottom-color: rgba(255 255 255 / 0.1) !important;
+            border-top-color: rgba(255 255 255 / 0.1) !important;
+        }
+
+        .price-matrix-table tbody tr:first-child.group-header td {
+            border-top: none !important;
+        }
+
+        .group-header:hover td {
+            background: rgb(249 250 251) !important;
+        }
+
+        :is(.dark) .group-header:hover td {
+            background: rgba(255 255 255 / 0.04) !important;
+        }
+
+        .group-color-dot {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 6px;
+            vertical-align: middle;
+        }
+
+        .group-count {
+            font-weight: 400;
+            color: rgb(156 163 175);
+            margin-left: 4px;
+            font-size: 11px;
+        }
+
+        :is(.dark) .group-count {
+            color: rgb(107 114 128);
         }
 
         /* Tabelle */

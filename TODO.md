@@ -3,7 +3,6 @@
 ## Offen
 - [ ] Preismatrix: Filament-Design anpassen (Abstände, Header, sauberes CSS ohne style-Block)
 - [ ] Exportmodul
-- [ ] Preismatrix Grouppierung nach Artikelgruppen aktivieren
 - [ ] Preismatrix Aritkel Splate immer so breit wie der görßte aritkel name  // alternait 10% größer als jetzt
 - [ ] Wiederkehrende Rechnungen — Monatliche Rechnungen (z.B. Hosting, Wartung) automatisch erstellen lassen statt jedes Mal manuell.
 - [ ]  Sammelrechnung — Mehrere Lieferscheine eines Kunden zu einer Rechnung zusammenfassen.
@@ -23,3 +22,4 @@
 - [x] Kunden: Spaltenauswahl (toggleable Columns)
 - [x] Dashboard: Kunden- und Artikel-Auswertungen (Aktivste Kunden, Top Umsatz, Top 5 Artikel, Charts)
 - [x] Default-Route auf /admin umleiten
+- [x] Preismatrix: Gruppierung nach Artikelgruppen mit farbigen Kategorie-Headern
